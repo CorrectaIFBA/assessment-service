@@ -5,9 +5,8 @@ import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 
-/**
- * Calls cohort-service internal endpoints directly inside the cluster, without the gateway or authentication.
- */
+
+
 @FeignClient(
     name = "cohort-service",
     url = "\${clients.cohort-service.url}"

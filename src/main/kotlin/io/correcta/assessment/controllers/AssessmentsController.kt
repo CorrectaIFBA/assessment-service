@@ -33,11 +33,10 @@ import org.springframework.web.bind.annotation.ResponseStatus
 @Tag(name = "Assessments", description = "Activities, lessons and exams accessible by the authenticated profile.")
 interface AssessmentsController {
 
-    /**
-     * gathers the assessments the authenticated profile has access to, only those shared with the profile through a cohort
-     * students can only see assessments in the cohorts they are enrolled in and are in published state
-     * while faculty can see assessments in the cohorts they are teaching, regardless of the state of the assessment
-     */
+    
+
+
+
     @GetMapping
     @IsLoggedUser
     fun getMyAssessments(
@@ -45,50 +44,50 @@ interface AssessmentsController {
         @Valid @ParameterObject pagination: PaginationRequest
     ): PagedResponse<GetAssessmentResponse>
 
-    /**
-     * retrieves a specific assessment by its ID, only if the authenticated profile has access to it
-     * students can only see assessments in the cohorts they are enrolled in and are in published state
-     * while faculty can see assessments in the cohorts they are teaching, regardless of the state of the assessment
-     */
+    
+
+
+
     @GetMapping("/{assessmentId}")
     @IsLoggedUser
     fun getAssessment(@PathVariable assessmentId: String): GetAssessmentResponse
 
-    /*
-     * allows a teacher to create a new assessment, mandatorily associated with a cohort they are teaching.
-     * must input a title, and optionally a description and a due date. the assessment will be created in draft state.
-     * must optionally provide parameters based on @AssessmentParameters
-     */
+    
+
+    @GetMapping("/by-slug/{cohortId}/{slug}")
+    @IsLoggedUser
+    fun getAssessmentBySlug(@PathVariable cohortId: String, @PathVariable slug: String): GetAssessmentResponse
+
+    
+
+
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @IsLoggedUser
     fun createAssessment(@Valid @RequestBody body: CreateAssessmentRequest): GetAssessmentResponse
 
-    /**
-     * allows a teacher to publish an assessment in a cohort they teach, making it available to students in the associated cohort.
-     */
+    
+
     @PostMapping("/{assessmentId}/publish")
     @IsLoggedUser
     fun publishAssessment(@PathVariable assessmentId: String): GetAssessmentResponse
 
-    /**
-     * allows a teacher to archive an assessment in a cohort they teach, making it unavailable to students in the associated cohort.
-     */
+    
+
     @PostMapping("/{assessmentId}/archive")
     @IsLoggedUser
     fun archiveAssessment(@PathVariable assessmentId: String): GetAssessmentResponse
 
-    /**
-     * allows a teacher to edit the properties of an assessment in a cohort they teach, such as title, description and due date.
-     */
+    
+
     @PostMapping("/{assessmentId}/edit")
     @IsLoggedUser
     fun editAssessment(@PathVariable assessmentId: String, @Valid @RequestBody body: UpdateAssessmentRequest): GetAssessmentResponse
 
-    /**
-     * allows a teacher to change a or many parameters of an assessment in a cohort they teach, such as canBeSubmittedAfterDueDate, needsToFinishInOneSitting, maximumTimeAllowed, monitorForCheating, canViewDefinitiveTestcaseScoringAfterSubmission.
-     *
-     */
+    
+
+
     @PatchMapping("/{assessmentId}/parameters")
     @IsLoggedUser
     fun changeAssessmentParameters(@PathVariable assessmentId: String, @Valid @RequestBody body: ChangeAssessmentParametersRequest): GetAssessmentResponse

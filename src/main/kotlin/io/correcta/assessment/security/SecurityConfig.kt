@@ -15,7 +15,6 @@ class SecurityConfig {
 
     @Bean
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
-        // CORS is handled by the gateway; endpoint access is enforced by SecurityAspect annotations.
         http.authorizeHttpRequests {
             it.anyRequest().permitAll()
         }

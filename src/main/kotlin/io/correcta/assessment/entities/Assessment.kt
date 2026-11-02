@@ -13,6 +13,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener
     indexes = [
         Index(name = "idx_assessment_owner_profile", columnList = "owner_profile_id"),
         Index(name = "idx_assessment_cohort", columnList = "cohort_id")
+    ],
+    uniqueConstraints = [
+        UniqueConstraint(name = "uk_assessment_cohort_slug", columnNames = ["cohort_id", "slug"])
     ]
 )
 @EntityListeners(AuditingEntityListener::class)
@@ -21,23 +24,24 @@ class Assessment(
     @UuidGenerator(style = UuidGenerator.Style.TIME)
     var id: String? = null,
 
-    /**
-     * Identity-service profile ID of the faculty member who created the assessment, for visibility purposes only.
-     * Only faculties can manage and delete the assessment.
-     * If they are members of the cohort as "FACULTIES" of it, they can manage the assessment.
-     * If they are not members of the cohort, they cannot manage the assessment.
-     */
+    
+
+
+
+
     @Column(name = "owner_profile_id", nullable = false, updatable = false)
     var ownerProfileId: String,
 
-    /**
-     * Cohort-service cohort ID the assessment belongs to.
-     */
+    
+
     @Column(name = "cohort_id", updatable = false)
     var cohortId: String? = null,
 
     @Column(nullable = false, length = 255)
     var title: String,
+
+    @Column(nullable = false, length = 160)
+    var slug: String,
 
     @Column(length = 1024)
     var description: String? = null,

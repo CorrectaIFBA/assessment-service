@@ -8,6 +8,8 @@ data class GetAssessmentQuestionResponse(
     val id: String,
     val assessmentId: String,
     val position: Int,
+    val title: String,
+    val slug: String,
     val statement: String,
     val codeDrafts: List<GetCodeDraftResponse>,
     val maximumGrade: BigDecimal,
@@ -28,8 +30,9 @@ data class GetAssessmentQuestionResponse(
                 id = question.id!!,
                 assessmentId = question.assessment.id!!,
                 position = question.position,
+                title = question.title,
+                slug = question.slug,
                 statement = question.statement,
-                // in the enum's order, so every client lists the languages the same way
                 codeDrafts = question.codeDrafts
                     .sortedBy { it.language.ordinal }
                     .map { GetCodeDraftResponse(language = it.language, code = it.code) },

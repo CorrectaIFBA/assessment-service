@@ -1,7 +1,6 @@
 package io.correcta.assessment.entities
 
 import jakarta.persistence.*
-import java.math.BigDecimal
 import java.time.Instant
 import org.hibernate.annotations.UuidGenerator
 import org.springframework.data.annotation.CreatedDate
@@ -31,9 +30,8 @@ class AssessmentSession(
     @JoinColumn(name = "assessment_id", nullable = false)
     var assessment: Assessment,
 
-    /**
-     * Identity-service profile ID of the student.
-     */
+    
+
     @Column(name = "student_profile_id", nullable = false, updatable = false)
     var studentProfileId: String,
     
@@ -49,8 +47,24 @@ class AssessmentSession(
     @Column(nullable = false)
     var updatedAt: Instant? = null,
 
+    
+
+    @Column(nullable = false, updatable = false)
+    var startedAt: Instant,
+
+    
+
+
+    @Column
+    var expiresAt: Instant? = null,
+
     @Column
     var lastHeartbeatAt: Instant? = null,
+
+    
+
+    @Column(nullable = false)
+    var openSeconds: Int = 0,
 
     @Column
     var finishedAt: Instant? = null

@@ -8,10 +8,9 @@ import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
 
-/**
- * Final grade and general faculty comment of one student in one assessment.
- * Per-question correction belongs to submission-service and evaluation-orchestrator.
- */
+
+
+
 @Entity
 @Table(
     name = "assessment_results",
@@ -35,9 +34,8 @@ class AssessmentResult(
     @JoinColumn(name = "assessment_id", nullable = false)
     var assessment: Assessment,
 
-    /**
-     * Identity-service profile ID of the graded student.
-     */
+    
+
     @Column(name = "student_profile_id", nullable = false, updatable = false)
     var studentProfileId: String,
 
@@ -47,9 +45,8 @@ class AssessmentResult(
     @Column(columnDefinition = "TEXT")
     var generalComment: String? = null,
 
-    /**
-     * Identity-service profile ID of the faculty member who assigned the final score.
-     */
+    
+
     @Column(name = "graded_by_profile_id")
     var gradedByProfileId: String? = null,
 

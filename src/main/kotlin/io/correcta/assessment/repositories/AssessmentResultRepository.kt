@@ -8,13 +8,5 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface AssessmentResultRepository : JpaRepository<AssessmentResult, String> {
-    fun findByAssessmentId(assessmentId: String, pageable: Pageable): Page<AssessmentResult>
-
-    fun findByIdAndAssessmentId(id: String, assessmentId: String): AssessmentResult?
-
-    fun findByAssessmentIdAndStudentProfileId(assessmentId: String, studentProfileId: String): AssessmentResult?
-
     fun findByAssessmentIdInAndStudentProfileId(assessmentIds: Collection<String>, studentProfileId: String): List<AssessmentResult>
-
-    fun deleteByAssessmentId(assessmentId: String)
 }

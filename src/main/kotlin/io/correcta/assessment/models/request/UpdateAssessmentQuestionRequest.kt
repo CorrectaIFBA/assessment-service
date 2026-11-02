@@ -1,5 +1,7 @@
 package io.correcta.assessment.models.request
 
+import io.correcta.assessment.utils.SlugExt.SLUG_MAX_LENGTH
+import io.correcta.assessment.utils.SlugExt.SLUG_PATTERN
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.Valid
 import jakarta.validation.constraints.DecimalMin
@@ -8,13 +10,25 @@ import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotEmpty
 import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.Pattern
+import jakarta.validation.constraints.Size
 import java.math.BigDecimal
 
 data class UpdateAssessmentQuestionRequest(
     @field:Schema(description = "Zero-based question position inside the assessment.", example = "0")
     @field:NotNull(message = "A posição é obrigatória")
     @field:Min(value = 0, message = "A posição deve ser maior ou igual a 0")
-    val position: Int?,
+    var position: Int?,
+
+    @field:Schema(description = "Question title, shown in lists and headings.", example = "Soma de dois números")
+    @field:NotBlank(message = "O título é obrigatório")
+    @field:Size(max = 255, message = "O título deve ter no máximo 255 caracteres")
+    val title: String,
+
+    @field:Schema(description = "Address of the question in its assessment's URL, unique inside the assessment. Kept as is when omitted.", example = "soma-de-dois-numeros")
+    @field:Size(max = SLUG_MAX_LENGTH, message = "O slug deve ter no máximo 160 caracteres")
+    @field:Pattern(regexp = SLUG_PATTERN, message = "O slug deve conter apenas letras minúsculas, números e hífens")
+    val slug: String? = null,
 
     @field:Schema(description = "Question statement in Markdown or HTML.", example = "Explique o conceito de recursão.")
     @field:NotBlank(message = "O enunciado é obrigatório")

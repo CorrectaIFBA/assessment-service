@@ -12,6 +12,7 @@ data class GetAssessmentResponse(
     val ownerProfileId: String,
     val cohortId: String?,
     val title: String,
+    val slug: String,
     val description: String?,
     val state: AssessmentState,
     val dueDate: String?,
@@ -21,6 +22,8 @@ data class GetAssessmentResponse(
     val totalGrade: BigDecimal,
     @field:Schema(description = "Final score of the authenticated student, once graded. Always null for faculty.")
     val score: BigDecimal?,
+    @field:Schema(description = "Session of the authenticated student, null when they have not started it. Always null for faculty.")
+    val mySession: GetAssessmentSessionSummaryResponse?,
     val createdAt: String,
     val updatedAt: String,
 ) {
@@ -32,12 +35,14 @@ data class GetAssessmentResponse(
             parameters: AssessmentParameters? = null,
             questions: AssessmentQuestionRepository.QuestionSummary? = null,
             score: BigDecimal? = null,
+            mySession: GetAssessmentSessionSummaryResponse? = null,
         ): GetAssessmentResponse {
             return GetAssessmentResponse(
                 id = assessment.id!!,
                 ownerProfileId = assessment.ownerProfileId,
                 cohortId = assessment.cohortId,
                 title = assessment.title,
+                slug = assessment.slug,
                 description = assessment.description,
                 state = assessment.state,
                 dueDate = assessment.dueDate?.toString(),
@@ -45,6 +50,7 @@ data class GetAssessmentResponse(
                 questionCount = questions?.questionCount ?: 0,
                 totalGrade = questions?.totalGrade ?: BigDecimal.ZERO,
                 score = score,
+                mySession = mySession,
                 createdAt = assessment.createdAt!!.toString(),
                 updatedAt = assessment.updatedAt!!.toString()
             )

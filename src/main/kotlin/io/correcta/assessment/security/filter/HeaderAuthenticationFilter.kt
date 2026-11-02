@@ -10,10 +10,9 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.filter.OncePerRequestFilter
 
-/**
- * Builds the authentication from the identity headers set by the gateway. This service never validates
- * tokens itself, so it must only be reachable through the gateway.
- */
+
+
+
 class HeaderAuthenticationFilter : OncePerRequestFilter() {
 
     override fun doFilterInternal(

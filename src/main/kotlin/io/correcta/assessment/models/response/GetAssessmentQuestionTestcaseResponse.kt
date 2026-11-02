@@ -18,9 +18,8 @@ data class GetAssessmentQuestionTestcaseResponse(
 
     companion object {
 
-        /**
-         * faculty get every value; students only get the values their test case type makes visible, the rest is null.
-         */
+        
+
         fun fromTestcase(testcase: AssessmentQuestionTestcase, isFaculty: Boolean): GetAssessmentQuestionTestcaseResponse {
             return GetAssessmentQuestionTestcaseResponse(
                 id = testcase.id!!,

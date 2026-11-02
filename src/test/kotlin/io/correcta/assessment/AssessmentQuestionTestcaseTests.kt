@@ -61,7 +61,6 @@ class AssessmentQuestionTestcaseTests(
             jsonPath("$[2].id") { value(second) }
         }
 
-        // the new order must name every test case of the question
         post("/api/v1/assessments/$assessmentId/questions/$questionId/testcases/reorder", """["$third", "$first"]""")
             .andExpect { status { isBadRequest() } }
     }
@@ -112,7 +111,7 @@ class AssessmentQuestionTestcaseTests(
         val questionId = idOf(
             post(
                 "/api/v1/assessments/$assessmentId/questions",
-                """{"statement": "Some dois números.", "codeDrafts": [{"language": "C", "code": ""}], "maximumGrade": 2}"""
+                """{"title": "Soma", "statement": "Some dois números.", "codeDrafts": [{"language": "C", "code": ""}], "maximumGrade": 2}"""
             )
         )
         return assessmentId to questionId

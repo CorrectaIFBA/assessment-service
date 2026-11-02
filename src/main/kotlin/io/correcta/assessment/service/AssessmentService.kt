@@ -6,6 +6,7 @@ import io.correcta.assessment.entities.AssessmentParameters
 import io.correcta.assessment.entities.AssessmentState
 import io.correcta.assessment.exceptions.BadRequestException
 import io.correcta.assessment.exceptions.ConflictException
+import io.correcta.assessment.exceptions.NotFoundException
 import io.correcta.assessment.models.request.AssessmentFilterRequest
 import io.correcta.assessment.models.request.AssessmentParametersRequest
 import io.correcta.assessment.models.request.ChangeAssessmentParametersRequest
@@ -22,6 +23,8 @@ import io.correcta.assessment.repositories.AssessmentResultRepository
 import io.correcta.assessment.repositories.specifications.AssessmentSpecifications
 import io.correcta.assessment.utils.PaginationExt.toPageRequest
 import io.correcta.assessment.utils.PaginationExt.toPagedResponse
+import io.correcta.assessment.utils.SlugExt.toSlug
+import io.correcta.assessment.utils.SlugExt.uniqueSlug
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -35,13 +38,13 @@ class AssessmentService(
     val assessmentQuestionRepository: AssessmentQuestionRepository,
     val assessmentResultRepository: AssessmentResultRepository,
     val assessmentAccessService: AssessmentAccessService,
+    val assessmentSessionService: AssessmentSessionService,
 ) {
 
-    /**
-     * gathers the assessments the authenticated profile has access to, only those shared with the profile through a cohort
-     * students can only see assessments in the cohorts they are enrolled in and are in published state
-     * while faculty can see assessments in the cohorts they are teaching, regardless of the state of the assessment
-     */
+    
+
+
+
     @Transactional(readOnly = true)
     fun getMyAssessments(
         filter: AssessmentFilterRequest,
@@ -49,13 +52,11 @@ class AssessmentService(
     ): PagedResponse<GetAssessmentResponse> {
         val pageRequest = pagination.toPageRequest(allowedSortFields = ALLOWED_SORT_FIELDS)
 
-        // cohort-service only resolves memberships one cohort at a time, so listing is scoped to a single cohort
         val cohortId = filter.cohortId?.trim()?.takeIf { it.isNotEmpty() }
             ?: throw BadRequestException("A turma é obrigatória para listar atividades.")
 
         val membership = assessmentAccessService.requireCohortMember(cohortId)
 
-        // for students both state filters are combined, so asking for anything other than PUBLISHED yields an empty page
         val specification = Specification.allOf(
             listOfNotNull(
                 AssessmentSpecifications.isOfCohort(cohortId),
@@ -74,6 +75,7 @@ class AssessmentService(
         val assessmentIds = assessmentsPage.content.map { it.id!! }
         val questionsByAssessmentId = questionSummaries(assessmentIds)
         val scoresByAssessmentId = scores(assessmentIds)
+        val sessionsByAssessmentId = assessmentSessionService.summarizeMySessions(assessmentIds)
 
         return assessmentsPage.toPagedResponse(pagination) { assessment ->
             GetAssessmentResponse.fromAssessment(
@@ -81,15 +83,15 @@ class AssessmentService(
                 parametersByAssessmentId[assessment.id],
                 questionsByAssessmentId[assessment.id],
                 scoresByAssessmentId[assessment.id],
+                sessionsByAssessmentId[assessment.id],
             )
         }
     }
 
-    /**
-     * retrieves a specific assessment by its ID, only if the authenticated profile has access to it
-     * students can only see assessments in the cohorts they are enrolled in and are in published state
-     * while faculty can see assessments in the cohorts they are teaching, regardless of the state of the assessment
-     */
+    
+
+
+
     @Transactional(readOnly = true)
     fun getAssessment(assessmentId: String): GetAssessmentResponse {
         val assessment = assessmentAccessService.findReadableAssessment(assessmentId)
@@ -97,15 +99,24 @@ class AssessmentService(
         return respond(assessment, assessmentParametersRepository.findByAssessmentId(assessmentId))
     }
 
-    /*
-     * allows a teacher to create a new assessment, mandatorily associated with a cohort they are teaching.
-     * must input a title, and optionally a description and a due date. the assessment will be created in draft state.
-     * must optionally provide parameters based on @AssessmentParameters
-     */
+    
+
+
+    @Transactional(readOnly = true)
+    fun getAssessmentBySlug(cohortId: String, slug: String): GetAssessmentResponse {
+        val assessment = assessmentRepository.findByCohortIdAndSlug(cohortId, slug)
+            ?: throw NotFoundException("Atividade não encontrada.")
+
+        return getAssessment(assessment.id!!)
+    }
+
+    
+
+
+
     @Transactional
     fun createAssessment(request: CreateAssessmentRequest): GetAssessmentResponse {
         val principal = assessmentAccessService.getAuthenticatedProfile()
-        // non-null is guaranteed by @NotBlank; nullable only so a missing field fails validation instead of deserialization
         val cohortId = request.cohortId!!.trim()
 
         assessmentAccessService.requireActiveCohortFaculty(cohortId)
@@ -115,6 +126,8 @@ class AssessmentService(
                 ownerProfileId = principal.profileId,
                 cohortId = cohortId,
                 title = request.title.trim(),
+                slug = request.slug?.also { requireSlugAvailable(cohortId, it, assessmentId = null) }
+                    ?: uniqueSlug(request.title.toSlug(FALLBACK_SLUG)) { assessmentRepository.existsByCohortIdAndSlug(cohortId, it) },
                 description = request.description.normalized(),
                 dueDate = request.dueDate,
             )
@@ -127,30 +140,32 @@ class AssessmentService(
         return respond(assessment, parameters)
     }
 
-    /**
-     * allows a teacher to publish an assessment in a cohort they teach, making it available to students in the associated cohort.
-     */
+    
+
     @Transactional
     fun publishAssessment(assessmentId: String): GetAssessmentResponse {
         return changeState(assessmentId, AssessmentState.PUBLISHED, "A atividade já está publicada.")
     }
 
-    /**
-     * allows a teacher to archive an assessment in a cohort they teach, making it unavailable to students in the associated cohort.
-     */
+    
+
+
     @Transactional
     fun archiveAssessment(assessmentId: String): GetAssessmentResponse {
         return changeState(assessmentId, AssessmentState.ARCHIVED, "A atividade já está arquivada.")
     }
 
-    /**
-     * allows a teacher to edit the properties of an assessment in a cohort they teach, such as title, description and due date.
-     */
+    
+
     @Transactional
     fun editAssessment(assessmentId: String, request: UpdateAssessmentRequest): GetAssessmentResponse {
         val assessment = assessmentAccessService.findManageableAssessment(assessmentId)
 
         assessment.title = request.title.trim()
+        request.slug?.takeIf { it != assessment.slug }?.let { slug ->
+            requireSlugAvailable(assessment.cohortId!!, slug, assessmentId)
+            assessment.slug = slug
+        }
         assessment.description = request.description.normalized()
         assessment.dueDate = request.dueDate
 
@@ -160,10 +175,9 @@ class AssessmentService(
         )
     }
 
-    /**
-     * allows a teacher to change a or many parameters of an assessment in a cohort they teach, such as canBeSubmittedAfterDueDate, needsToFinishInOneSitting, maximumTimeAllowed, monitorForCheating, canViewDefinitiveTestcaseScoringAfterSubmission.
-     * should log the changes made to the parameters, including the previous and new values, the timestamp of the change, and the profile ID of the user who made the change.
-     */
+    
+
+
     @Transactional
     fun changeAssessmentParameters(
         assessmentId: String,
@@ -208,12 +222,15 @@ class AssessmentService(
             throw ConflictException(alreadyInStateMessage)
         }
 
-        // the assessment row is locked, so no question can be removed between this check and the state change
         if (targetState == AssessmentState.PUBLISHED && !assessmentQuestionRepository.existsByAssessmentId(assessmentId)) {
             throw ConflictException("A atividade precisa de ao menos uma questão para ser publicada.")
         }
 
         assessment.state = targetState
+
+        if (targetState == AssessmentState.ARCHIVED) {
+            assessmentSessionService.finishSessionsOnArchive(assessment)
+        }
 
         return respond(
             assessmentRepository.saveAndFlush(assessment),
@@ -221,10 +238,9 @@ class AssessmentService(
         )
     }
 
-    /**
-     * the assessment as answered by every endpoint: its parameters, the totals of its questions
-     * and, for a graded student, their score.
-     */
+    
+
+
     private fun respond(assessment: Assessment, parameters: AssessmentParameters?): GetAssessmentResponse {
         val assessmentIds = listOf(assessment.id!!)
 
@@ -233,6 +249,7 @@ class AssessmentService(
             parameters,
             questionSummaries(assessmentIds)[assessment.id],
             scores(assessmentIds)[assessment.id],
+            assessmentSessionService.summarizeMySessions(assessmentIds)[assessment.id],
         )
     }
 
@@ -242,9 +259,8 @@ class AssessmentService(
         return assessmentQuestionRepository.summarizeByAssessmentIds(assessmentIds).associateBy { it.assessmentId }
     }
 
-    /**
-     * results only exist for students, so for faculty this is always empty.
-     */
+    
+
     private fun scores(assessmentIds: List<String>): Map<String, BigDecimal?> {
         if (assessmentIds.isEmpty()) return emptyMap()
 
@@ -255,19 +271,28 @@ class AssessmentService(
 
     private fun String?.normalized(): String? = this?.trim()?.takeIf { it.isNotEmpty() }
 
-    /**
-     * the values tracked by the parameter change log, keyed by parameter name.
-     * a new parameter only needs an entry here to be audited.
-     */
+    private fun requireSlugAvailable(cohortId: String, slug: String, assessmentId: String?) {
+        val taken = if (assessmentId == null) {
+            assessmentRepository.existsByCohortIdAndSlug(cohortId, slug)
+        } else {
+            assessmentRepository.existsByCohortIdAndSlugAndIdNot(cohortId, slug, assessmentId)
+        }
+
+        if (taken) throw ConflictException("Já existe uma atividade com o slug '$slug' nesta turma.")
+    }
+
+    
+
+
     private fun AssessmentParameters.snapshot(): Map<String, Any?> = mapOf(
         "canBeSubmittedAfterDueDate" to canBeSubmittedAfterDueDate,
-        "needsToFinishInOneSitting" to needsToFinishInOneSitting,
         "maximumTimeAllowed" to maximumTimeAllowed,
-        "monitorForCheating" to monitorForCheating,
+        "showCompilationErrors" to showCompilationErrors,
         "canViewDefinitiveTestcaseScoringAfterSubmission" to canViewDefinitiveTestcaseScoringAfterSubmission,
     )
 
     companion object {
         private val ALLOWED_SORT_FIELDS = setOf("createdAt", "title", "dueDate")
+        private const val FALLBACK_SLUG = "atividade"
     }
 }

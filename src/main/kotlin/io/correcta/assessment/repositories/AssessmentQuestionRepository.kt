@@ -18,9 +18,11 @@ interface AssessmentQuestionRepository : JpaRepository<AssessmentQuestion, Strin
 
     fun existsByAssessmentId(assessmentId: String): Boolean
 
-    fun countByAssessmentId(assessmentId: String): Long
+    fun existsByAssessmentIdAndSlug(assessmentId: String, slug: String): Boolean
 
-    fun deleteByAssessmentId(assessmentId: String)
+    fun existsByAssessmentIdAndSlugAndIdNot(assessmentId: String, slug: String, id: String): Boolean
+
+    fun countByAssessmentId(assessmentId: String): Long
 
     @Query(
         """
@@ -32,7 +34,6 @@ interface AssessmentQuestionRepository : JpaRepository<AssessmentQuestion, Strin
     )
     fun summarizeByAssessmentIds(assessmentIds: Collection<String>): List<QuestionSummary>
 
-    /** how many questions an assessment has and what they are worth together. */
     interface QuestionSummary {
         val assessmentId: String
         val questionCount: Long

@@ -6,6 +6,7 @@ import io.correcta.assessment.models.response.clients.CohortMembershipResponse
 import io.correcta.assessment.repositories.AssessmentRepository
 import io.correcta.assessment.repositories.AssessmentSessionRepository
 import io.correcta.assessment.security.models.IdentityHeaders
+import java.time.Instant
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.`when`
@@ -47,7 +48,7 @@ class AssessmentQuestionTests(
 
         publish(assessmentId).andExpect { status { isConflict() } }
 
-        createQuestion(assessmentId, "PYTHON").andExpect { status { isCreated() } }
+        createQuestion(assessmentId, "C").andExpect { status { isCreated() } }
 
         publish(assessmentId).andExpect {
             status { isOk() }
@@ -59,27 +60,23 @@ class AssessmentQuestionTests(
     fun `allowed languages are limited to the supported ones`() {
         val assessmentId = createAssessment()
 
-        listOf("C", "PYTHON", "JAVA").forEach { language ->
-            createQuestion(assessmentId, language).andExpect {
-                status { isCreated() }
-                jsonPath("$.codeDrafts[0].language") { value(language) }
-            }
+        createQuestion(assessmentId, "C").andExpect {
+            status { isCreated() }
+            jsonPath("$.codeDrafts[0].language") { value("C") }
         }
 
-        createQuestion(assessmentId, "RUST").andExpect { status { isBadRequest() } }
+        listOf("PYTHON", "JAVA", "RUST").forEach { language ->
+            createQuestion(assessmentId, language).andExpect { status { isBadRequest() } }
+        }
     }
 
     @Test
     fun `a question allows one or more languages, each once`() {
         val assessmentId = createAssessment()
 
-        createQuestion(assessmentId, "JAVA", "C", "PYTHON").andExpect {
+        createQuestion(assessmentId, "C").andExpect {
             status { isCreated() }
-            // listed in the enum's order, whatever order they were sent in
-            jsonPath("$.codeDrafts.length()") { value(3) }
-            jsonPath("$.codeDrafts[0].language") { value("C") }
-            jsonPath("$.codeDrafts[1].language") { value("PYTHON") }
-            jsonPath("$.codeDrafts[2].language") { value("JAVA") }
+            jsonPath("$.codeDrafts.length()") { value(1) }
         }
 
         createQuestion(assessmentId).andExpect { status { isBadRequest() } }
@@ -89,16 +86,16 @@ class AssessmentQuestionTests(
     @Test
     fun `editing a question replaces its allowed languages`() {
         val assessmentId = createAssessment()
-        val questionId = idOf(createQuestion(assessmentId, "C", "PYTHON"))
+        val questionId = idOf(createQuestion(assessmentId, "C"))
 
         mockMvc.post("/api/v1/assessments/$assessmentId/questions/$questionId/edit") {
             header(IdentityHeaders.PROFILE_ID, "faculty-a")
             contentType = MediaType.APPLICATION_JSON
-            content = """{"position": 0, "statement": "Some três números.", ${codeDraftsJson("JAVA")}, "maximumGrade": 3}"""
+            content = """{"position": 0, "title": "Soma de três", "statement": "Some três números.", "codeDrafts": [{"language": "C", "code": "int main() {}"}], "maximumGrade": 3}"""
         }.andExpect {
             status { isOk() }
             jsonPath("$.codeDrafts.length()") { value(1) }
-            jsonPath("$.codeDrafts[0].language") { value("JAVA") }
+            jsonPath("$.codeDrafts[0].code") { value("int main() {}") }
         }
     }
 
@@ -107,7 +104,7 @@ class AssessmentQuestionTests(
         val assessmentId = createAssessment()
 
         createQuestion(assessmentId, "C")
-        createQuestion(assessmentId, "PYTHON")
+        createQuestion(assessmentId, "C")
 
         mockMvc.get("/api/v1/assessments/$assessmentId") {
             header(IdentityHeaders.PROFILE_ID, "faculty-a")
@@ -131,18 +128,21 @@ class AssessmentQuestionTests(
     @Test
     fun `students only see questions of published assessments and cannot manage them`() {
         val assessmentId = createAssessment()
-        val questionId = idOf(createQuestion(assessmentId, "JAVA"))
+        val questionId = idOf(createQuestion(assessmentId, "C"))
 
         getQuestions(assessmentId, "student-a").andExpect { status { isNotFound() } }
-        createQuestion(assessmentId, "JAVA", profileId = "student-a").andExpect { status { isForbidden() } }
+        createQuestion(assessmentId, "C", profileId = "student-a").andExpect { status { isForbidden() } }
 
         publish(assessmentId)
 
-        // published, but the student has not started it yet
         getQuestions(assessmentId, "student-a").andExpect { status { isForbidden() } }
 
         assessmentSessionRepository.save(
-            AssessmentSession(assessment = assessmentRepository.findById(assessmentId).get(), studentProfileId = "student-a")
+            AssessmentSession(
+                assessment = assessmentRepository.findById(assessmentId).get(),
+                studentProfileId = "student-a",
+                startedAt = Instant.now(),
+            )
         )
 
         getQuestions(assessmentId, "student-a").andExpect {
@@ -153,28 +153,85 @@ class AssessmentQuestionTests(
         deleteQuestion(assessmentId, questionId).andExpect { status { isConflict() } }
     }
 
-    private fun createAssessment(): String {
-        return idOf(
-            mockMvc.post("/api/v1/assessments") {
-                header(IdentityHeaders.PROFILE_ID, "faculty-a")
-                contentType = MediaType.APPLICATION_JSON
-                content = """{"title": "Lista 1", "cohortId": "cohort-1"}"""
-            }.andExpect { status { isCreated() } }
+    @Test
+    fun `assessments are addressed by a slug unique inside their cohort`() {
+        val assessmentId = idOf(
+            postAssessment("""{"title": "Árvores Binárias", "cohortId": "cohort-1"}""").andExpect {
+                status { isCreated() }
+                jsonPath("$.slug") { value("arvores-binarias") }
+            }
         )
+
+        postAssessment("""{"title": "Árvores Binárias", "cohortId": "cohort-1"}""").andExpect {
+            jsonPath("$.slug") { value("arvores-binarias-2") }
+        }
+        postAssessment("""{"title": "Outra", "slug": "arvores-binarias", "cohortId": "cohort-1"}""").andExpect {
+            status { isConflict() }
+        }
+        postAssessment("""{"title": "Outra", "slug": "Com Espaço", "cohortId": "cohort-1"}""").andExpect {
+            status { isBadRequest() }
+        }
+
+        mockMvc.post("/api/v1/assessments/$assessmentId/edit") {
+            header(IdentityHeaders.PROFILE_ID, "faculty-a")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"title": "Árvores", "slug": "arvores"}"""
+        }.andExpect { jsonPath("$.slug") { value("arvores") } }
+
+        mockMvc.get("/api/v1/assessments/by-slug/cohort-1/arvores") {
+            header(IdentityHeaders.PROFILE_ID, "faculty-a")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.id") { value(assessmentId) }
+        }
+
+        mockMvc.get("/api/v1/assessments/by-slug/cohort-1/arvores-binarias-3") {
+            header(IdentityHeaders.PROFILE_ID, "faculty-a")
+        }.andExpect { status { isNotFound() } }
+    }
+
+    @Test
+    fun `questions get a slug from their title, unique inside the assessment`() {
+        val assessmentId = createAssessment()
+
+        createQuestion(assessmentId, "C", title = "Soma de Vetores").andExpect {
+            jsonPath("$.title") { value("Soma de Vetores") }
+            jsonPath("$.slug") { value("soma-de-vetores") }
+        }
+        createQuestion(assessmentId, "C", title = "Soma de Vetores").andExpect { jsonPath("$.slug") { value("soma-de-vetores-2") } }
+        createQuestion(assessmentId, "C", slug = "soma-de-vetores").andExpect { status { isConflict() } }
+
+        createQuestion(assessmentId, "C", slug = "new").andExpect { status { isBadRequest() } }
+        createQuestion(assessmentId, "C", title = "New").andExpect { jsonPath("$.slug") { value("new-2") } }
+    }
+
+    private fun createAssessment(): String {
+        return idOf(postAssessment("""{"title": "Lista 1", "cohortId": "cohort-1"}""").andExpect { status { isCreated() } })
+    }
+
+    private fun postAssessment(body: String): ResultActionsDsl {
+        return mockMvc.post("/api/v1/assessments") {
+            header(IdentityHeaders.PROFILE_ID, "faculty-a")
+            contentType = MediaType.APPLICATION_JSON
+            content = body
+        }
     }
 
     private fun createQuestion(
         assessmentId: String,
         vararg languages: String,
         position: Int? = null,
-        profileId: String = "faculty-a"
+        profileId: String = "faculty-a",
+        title: String = "Soma",
+        slug: String? = null,
     ): ResultActionsDsl {
         val positionField = position?.let { """"position": $it,""" } ?: ""
+        val slugField = slug?.let { """"slug": "$it",""" } ?: ""
 
         return mockMvc.post("/api/v1/assessments/$assessmentId/questions") {
             header(IdentityHeaders.PROFILE_ID, profileId)
             contentType = MediaType.APPLICATION_JSON
-            content = """{$positionField "statement": "Some dois números.", ${codeDraftsJson(*languages)}, "maximumGrade": 2.5}"""
+            content = """{$positionField $slugField "title": "$title", "statement": "Some dois números.", ${codeDraftsJson(*languages)}, "maximumGrade": 2.5}"""
         }
     }
 

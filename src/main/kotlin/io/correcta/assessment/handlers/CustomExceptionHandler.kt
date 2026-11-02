@@ -45,9 +45,8 @@ class CustomExceptionHandler {
             .body(validationErrorResponse)
     }
 
-    /**
-     * malformed JSON, missing non-nullable fields and unknown enum values, such as an unsupported draft code language.
-     */
+    
+
     @ExceptionHandler(HttpMessageNotReadableException::class)
     fun handleHttpMessageNotReadableException(exception: HttpMessageNotReadableException): ResponseEntity<ErrorResponse> {
         log.warn("Unreadable request body: {}", exception.mostSpecificCause.message)
@@ -109,7 +108,6 @@ class CustomExceptionHandler {
 
         val response = ResponseEntity.status(405)
 
-        // RFC 9110 requires a 405 to advertise what the endpoint does accept.
         if (supported.isNotEmpty()) response.header("Allow", supported)
 
         return response.body(ErrorResponse("O método '${exception.method}' não é suportado por este endpoint."))

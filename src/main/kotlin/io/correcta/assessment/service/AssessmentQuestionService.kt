@@ -11,6 +11,9 @@ import io.correcta.assessment.models.request.CreateAssessmentQuestionRequest
 import io.correcta.assessment.models.request.UpdateAssessmentQuestionRequest
 import io.correcta.assessment.models.response.GetAssessmentQuestionResponse
 import io.correcta.assessment.repositories.AssessmentQuestionRepository
+import io.correcta.assessment.repositories.AssessmentSessionRepository
+import io.correcta.assessment.utils.SlugExt.toSlug
+import io.correcta.assessment.utils.SlugExt.uniqueSlug
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -18,11 +21,11 @@ import org.springframework.transaction.annotation.Transactional
 class AssessmentQuestionService(
     val assessmentQuestionRepository: AssessmentQuestionRepository,
     val assessmentAccessService: AssessmentAccessService,
+    val assessmentSessionRepository: AssessmentSessionRepository,
 ) {
 
-    /**
-     * lists the questions of an assessment ordered by position. students only see them once they started the assessment.
-     */
+    
+
     @Transactional(readOnly = true)
     fun getQuestions(assessmentId: String): List<GetAssessmentQuestionResponse> {
         assessmentAccessService.findAssessmentWithVisibleQuestions(assessmentId)
@@ -39,10 +42,9 @@ class AssessmentQuestionService(
         return GetAssessmentQuestionResponse.fromQuestion(findQuestion(assessmentId, questionId))
     }
 
-    /**
-     * the question is appended after the last one when no position is given.
-     * the assessment row is locked, so concurrent creations never compute the same position.
-     */
+    
+
+
     @Transactional
     fun createQuestion(assessmentId: String, request: CreateAssessmentQuestionRequest): GetAssessmentQuestionResponse {
         val assessment = assessmentAccessService.findManageableAssessment(assessmentId)
@@ -50,11 +52,15 @@ class AssessmentQuestionService(
 
         requirePositionAvailable(assessmentId, position, questionId = null)
 
-        // non-null fields are guaranteed by @NotNull; nullable only so a missing field fails validation instead of deserialization
         val question = assessmentQuestionRepository.save(
             AssessmentQuestion(
                 assessment = assessment,
                 position = position,
+                title = request.title.trim(),
+                slug = request.slug?.also { requireSlugAvailable(assessmentId, it, questionId = null) }
+                    ?: uniqueSlug(request.title.toSlug(FALLBACK_SLUG)) {
+                        it in RESERVED_SLUGS || assessmentQuestionRepository.existsByAssessmentIdAndSlug(assessmentId, it)
+                    },
                 statement = request.statement.trim(),
                 codeDrafts = codeDraftsOf(request.codeDrafts),
                 maximumGrade = request.maximumGrade!!,
@@ -77,9 +83,17 @@ class AssessmentQuestionService(
 
         requirePositionAvailable(assessmentId, position, questionId)
 
+        if (request.maximumGrade!!.compareTo(question.maximumGrade) != 0 && assessmentSessionRepository.existsByAssessmentId(assessmentId)) {
+            throw ConflictException("Estudantes já iniciaram a atividade: a nota máxima da questão não pode mudar.")
+        }
+
         question.position = position
+        question.title = request.title.trim()
+        request.slug?.takeIf { it != question.slug }?.let { slug ->
+            requireSlugAvailable(assessmentId, slug, questionId)
+            question.slug = slug
+        }
         question.statement = request.statement.trim()
-        // replaced in place: Hibernate tracks the collection instance it loaded
         question.codeDrafts.clear()
         question.codeDrafts.addAll(codeDraftsOf(request.codeDrafts))
         question.maximumGrade = request.maximumGrade!!
@@ -88,13 +102,17 @@ class AssessmentQuestionService(
         return GetAssessmentQuestionResponse.fromQuestion(assessmentQuestionRepository.saveAndFlush(question))
     }
 
-    /**
-     * a published assessment must keep at least one question, mirroring the publish rule.
-     */
+    
+
+
     @Transactional
     fun deleteQuestion(assessmentId: String, questionId: String) {
         val assessment = assessmentAccessService.findManageableAssessment(assessmentId)
         val question = findQuestion(assessmentId, questionId)
+
+        if (assessmentSessionRepository.existsByAssessmentId(assessmentId)) {
+            throw ConflictException("Estudantes já iniciaram a atividade: a questão não pode ser excluída.")
+        }
 
         if (assessment.state == AssessmentState.PUBLISHED && assessmentQuestionRepository.countByAssessmentId(assessmentId) <= 1) {
             throw ConflictException("Uma atividade publicada precisa de ao menos uma questão.")
@@ -103,9 +121,8 @@ class AssessmentQuestionService(
         assessmentQuestionRepository.delete(question)
     }
 
-    /**
-     * each language may be allowed once; a second draft for it would leave the student two starting points.
-     */
+    
+
     private fun codeDraftsOf(requests: List<CodeDraftRequest>): MutableList<CodeDraft> {
         val drafts = requests.map(CodeDraftRequest::toCodeDraft)
 
@@ -133,5 +150,23 @@ class AssessmentQuestionService(
     private fun findQuestion(assessmentId: String, questionId: String): AssessmentQuestion {
         return assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
             ?: throw NotFoundException("Questão não encontrada.")
+    }
+
+    private fun requireSlugAvailable(assessmentId: String, slug: String, questionId: String?) {
+        if (slug in RESERVED_SLUGS) throw BadRequestException("O slug '$slug' é reservado.")
+
+        val taken = if (questionId == null) {
+            assessmentQuestionRepository.existsByAssessmentIdAndSlug(assessmentId, slug)
+        } else {
+            assessmentQuestionRepository.existsByAssessmentIdAndSlugAndIdNot(assessmentId, slug, questionId)
+        }
+
+        if (taken) throw ConflictException("Já existe uma questão com o slug '$slug' nesta atividade.")
+    }
+
+    companion object {
+        private const val FALLBACK_SLUG = "questao"
+
+        private val RESERVED_SLUGS = setOf("new")
     }
 }

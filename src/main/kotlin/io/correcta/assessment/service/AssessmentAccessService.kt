@@ -15,10 +15,9 @@ import jakarta.persistence.EntityManager
 import jakarta.persistence.LockModeType
 import org.springframework.stereotype.Service
 
-/**
- * access rules shared by everything nested under an assessment.
- * every check is resolved against the assessment's cohort membership in cohort-service.
- */
+
+
+
 @Service
 class AssessmentAccessService(
     val assessmentRepository: AssessmentRepository,
@@ -28,18 +27,16 @@ class AssessmentAccessService(
     val entityManager: EntityManager,
 ) {
 
-    /**
-     * students can only reach published assessments, faculty can reach any state.
-     * unpublished assessments answer 404 to students, as if they did not exist.
-     */
+    
+
+
     fun findReadableAssessment(assessmentId: String): Assessment {
         return findReadableAssessmentWithMembership(assessmentId).first
     }
 
-    /**
-     * questions stay hidden from a student until they start the assessment, which opens their session;
-     * faculty always see them.
-     */
+    
+
+
     fun findAssessmentWithVisibleQuestions(assessmentId: String): Assessment {
         val (assessment, membership) = findReadableAssessmentWithMembership(assessmentId)
 
@@ -52,7 +49,9 @@ class AssessmentAccessService(
         return assessment
     }
 
-    private fun findReadableAssessmentWithMembership(assessmentId: String): Pair<Assessment, CohortMembershipResponse> {
+    
+
+    fun findReadableAssessmentWithMembership(assessmentId: String): Pair<Assessment, CohortMembershipResponse> {
         val assessment = findAssessment(assessmentId)
         val membership = requireCohortMember(assessment.cohortId ?: throw assessmentNotFound())
 
@@ -63,11 +62,10 @@ class AssessmentAccessService(
         return assessment to membership
     }
 
-    /**
-     * any faculty member of the assessment's active cohort may manage it, not only its owner.
-     * the row is locked after authorization, so concurrent changes to the same assessment run one at a time
-     * without holding the lock during the cohort-service call. requires an active transaction.
-     */
+    
+
+
+
     fun findManageableAssessment(assessmentId: String): Assessment {
         val assessment = findAssessment(assessmentId)
 
@@ -91,9 +89,8 @@ class AssessmentAccessService(
         return membership
     }
 
-    /**
-     * reading does not require an active cohort, so members keep access to assessments of archived cohorts.
-     */
+    
+
     fun requireCohortMember(cohortId: String): CohortMembershipResponse {
         return cohortMembershipService.findCurrentMembership(cohortId, getAuthenticatedProfile().profileId)
             ?: throw ForbiddenException("Apenas membros da turma podem acessar atividades atribuídas a ela.")

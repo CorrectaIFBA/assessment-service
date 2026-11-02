@@ -24,6 +24,10 @@ class AssessmentsControllerImpl(
         return assessmentService.getAssessment(assessmentId)
     }
 
+    override fun getAssessmentBySlug(cohortId: String, slug: String): GetAssessmentResponse {
+        return assessmentService.getAssessmentBySlug(cohortId, slug)
+    }
+
     override fun createAssessment(body: CreateAssessmentRequest): GetAssessmentResponse {
         return assessmentService.createAssessment(body)
     }

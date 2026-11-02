@@ -25,27 +25,24 @@ import org.springframework.web.multipart.MultipartFile
 @Tag(name = "Assessment Questions", description = "Questions of an assessment, each with the languages it allows and their draft code.")
 interface AssessmentQuestionsController {
 
-    /**
-     * lists the questions of an assessment ordered by position.
-     * students can only see questions of published assessments in the cohorts they are enrolled in, once they started the assessment
-     * while faculty can see questions of assessments in the cohorts they are teaching, regardless of the state of the assessment
-     */
+    
+
+
+
     @GetMapping
     @IsLoggedUser
     fun getQuestions(@PathVariable assessmentId: String): List<GetAssessmentQuestionResponse>
 
-    /**
-     * retrieves a specific question of an assessment, following the same visibility rules as the listing.
-     */
+    
+
     @GetMapping("/{questionId}")
     @IsLoggedUser
     fun getQuestion(@PathVariable assessmentId: String, @PathVariable questionId: String): GetAssessmentQuestionResponse
 
-    /**
-     * allows a teacher to add a question to an assessment in a cohort they teach.
-     * must input a statement, a maximum grade and one or more allowed languages (C, PYTHON or JAVA), each with its optional draft code.
-     * appended after the last question when no position is given.
-     */
+    
+
+
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @IsLoggedUser
@@ -54,9 +51,8 @@ interface AssessmentQuestionsController {
         @Valid @RequestBody body: CreateAssessmentQuestionRequest
     ): GetAssessmentQuestionResponse
 
-    /**
-     * allows a teacher to edit a question of an assessment in a cohort they teach.
-     */
+    
+
     @PostMapping("/{questionId}/edit")
     @IsLoggedUser
     fun editQuestion(
@@ -65,10 +61,9 @@ interface AssessmentQuestionsController {
         @Valid @RequestBody body: UpdateAssessmentQuestionRequest
     ): GetAssessmentQuestionResponse
 
-    /**
-     * allows a teacher to remove a question of an assessment in a cohort they teach.
-     * the last question of a published assessment cannot be removed.
-     */
+    
+
+
     @DeleteMapping("/{questionId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @IsLoggedUser

@@ -2,6 +2,7 @@ package io.correcta.assessment.service
 
 import io.correcta.assessment.entities.AssessmentQuestion
 import io.correcta.assessment.entities.AssessmentQuestionTestcase
+import io.correcta.assessment.entities.AssessmentQuestionTestcaseType
 import io.correcta.assessment.exceptions.BadRequestException
 import io.correcta.assessment.exceptions.ConflictException
 import io.correcta.assessment.exceptions.NotFoundException
@@ -12,6 +13,7 @@ import io.correcta.assessment.models.request.UpdateAssessmentQuestionTestcaseReq
 import io.correcta.assessment.models.response.GetAssessmentQuestionTestcaseResponse
 import io.correcta.assessment.repositories.AssessmentQuestionRepository
 import io.correcta.assessment.repositories.AssessmentQuestionTestcaseRepository
+import io.correcta.assessment.repositories.AssessmentSessionRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -20,23 +22,23 @@ class AssessmentQuestionTestcaseService(
     val assessmentQuestionTestcaseRepository: AssessmentQuestionTestcaseRepository,
     val assessmentQuestionRepository: AssessmentQuestionRepository,
     val assessmentAccessService: AssessmentAccessService,
+    val assessmentSessionRepository: AssessmentSessionRepository,
 ) {
 
-    /**
-     * lists the test cases of a question ordered by position, following the same visibility rules as the questions.
-     * students only get the test cases whose type is list visible, with hidden values left null.
-     */
+    
+
+
     @Transactional(readOnly = true)
     fun getTestcases(assessmentId: String, questionId: String): List<GetAssessmentQuestionTestcaseResponse> {
         val assessment =
-            assessmentAccessService.findAssessmentWithVisibleQuestions(assessmentId) // ensure read access to the assessment and question
+            assessmentAccessService.findAssessmentWithVisibleQuestions(assessmentId)
 
         val membership =
-            assessmentAccessService.requireCohortMember(assessment.cohortId!!) // ensure the user is a member of the cohort
+            assessmentAccessService.requireCohortMember(assessment.cohortId!!)
         val isFaculty = membership.isFaculty()
 
         assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
-            ?: throw NotFoundException("Questão não encontrada.") // ensure the question belongs to the assessment
+            ?: throw NotFoundException("Questão não encontrada.")
 
         val testcases = assessmentQuestionTestcaseRepository.findByQuestionIdOrderByPositionAsc(questionId)
 
@@ -49,27 +51,26 @@ class AssessmentQuestionTestcaseService(
         }
     }
 
-    /**
-     * allows a teacher to add a test case to a question of an assessment in a cohort they teach.
-     * appended after the last test case when no position is given; a taken position is a conflict.
-     */
+    
+
+
     @Transactional
     fun createTestcase(
         assessmentId: String,
         questionId: String,
         request: CreateAssessmentQuestionTestcaseRequest
     ): GetAssessmentQuestionTestcaseResponse {
-        assessmentAccessService.findManageableAssessment(assessmentId) // ensure write access to the assessment and question
+        assessmentAccessService.findManageableAssessment(assessmentId)
 
         val question = assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
-            ?: throw NotFoundException("Questão não encontrada.") // ensure the question belongs to the assessment
+            ?: throw NotFoundException("Questão não encontrada.")
 
         val existingTestcase = request.position?.let { position ->
             assessmentQuestionTestcaseRepository.findByQuestionIdAndPosition(questionId, position)
         }
 
         if (existingTestcase != null) {
-            throw ConflictException("Já existe um caso de teste na posição ${request.position}.") // should never happen, because frontend should prevent it, but just in case
+            throw ConflictException("Já existe um caso de teste na posição ${request.position}.")
         }
 
         val position = request.position ?: question.nextAvailablePosition
@@ -89,9 +90,8 @@ class AssessmentQuestionTestcaseService(
         return GetAssessmentQuestionTestcaseResponse.fromTestcase(testcase, isFaculty = true)
     }
 
-    /**
-     * allows a teacher to edit a test case of a question of an assessment in a cohort they teach.
-     */
+    
+
     @Transactional
     fun updateTestcase(
         assessmentId: String,
@@ -99,13 +99,13 @@ class AssessmentQuestionTestcaseService(
         testcaseId: String,
         request: UpdateAssessmentQuestionTestcaseRequest
     ): GetAssessmentQuestionTestcaseResponse {
-        assessmentAccessService.findManageableAssessment(assessmentId) // ensure write access to the assessment and question
+        assessmentAccessService.findManageableAssessment(assessmentId)
 
         assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
-            ?: throw NotFoundException("Questão não encontrada.") // ensure the question belongs to the assessment
+            ?: throw NotFoundException("Questão não encontrada.")
 
         val testcase = assessmentQuestionTestcaseRepository.findByIdAndQuestionId(testcaseId, questionId)
-            ?: throw NotFoundException("Caso de teste não encontrado.") // ensure the testcase belongs to the question
+            ?: throw NotFoundException("Caso de teste não encontrado.")
 
         request.position?.let { position ->
             if (position != testcase.position) {
@@ -142,24 +142,23 @@ class AssessmentQuestionTestcaseService(
         return GetAssessmentQuestionTestcaseResponse.fromTestcase(updatedTestcase, isFaculty = true)
     }
 
-    /**
-     * allows a teacher to update multiple test cases of a question of an assessment in a cohort they teach.
-     */
+    
+
     @Transactional
     fun bulkUpdateTestcases(
         assessmentId: String,
         questionId: String,
         request: BulkUpdateAssessmentQuestionTestcaseRequest
     ): List<GetAssessmentQuestionTestcaseResponse> {
-        assessmentAccessService.findManageableAssessment(assessmentId) // ensure write access to the assessment and question
+        assessmentAccessService.findManageableAssessment(assessmentId)
 
         assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
-            ?: throw NotFoundException("Questão não encontrada.") // ensure the question belongs to the assessment
+            ?: throw NotFoundException("Questão não encontrada.")
 
         val testcases = assessmentQuestionTestcaseRepository.findByQuestionIdAndIdInOrderByPositionAsc(questionId, request.testCaseIds)
 
         if (testcases.size != request.testCaseIds.toSet().size) {
-            throw NotFoundException("Caso de teste não encontrado.") // every id must belong to the question
+            throw NotFoundException("Caso de teste não encontrado.")
         }
 
         val updatedTestcases = testcases.map { testcase ->
@@ -183,32 +182,31 @@ class AssessmentQuestionTestcaseService(
         }
     }
 
-    /**
-     * allows a teacher to remove a test case of a question of an assessment in a cohort they teach.
-     */
+    
+
     @Transactional
     fun deleteTestcase(assessmentId: String, questionId: String, testcaseId: String) {
-        assessmentAccessService.findManageableAssessment(assessmentId) // ensure write access to the assessment and question
+        assessmentAccessService.findManageableAssessment(assessmentId)
 
         assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
-            ?: throw NotFoundException("Questão não encontrada.") // ensure the question belongs to the assessment
+            ?: throw NotFoundException("Questão não encontrada.")
 
         val testcase = assessmentQuestionTestcaseRepository.findByIdAndQuestionId(testcaseId, questionId)
-            ?: throw NotFoundException("Caso de teste não encontrado.") // ensure the testcase belongs to the question
+            ?: throw NotFoundException("Caso de teste não encontrado.")
 
+        requireGradingTestcasesKept(assessmentId, listOf(testcase))
         assessmentQuestionTestcaseRepository.delete(testcase)
     }
 
-    /**
-     * allows a teacher to remove multiple test cases of a question of an assessment in a cohort they teach.
-     * the remaining test cases keep their positions; the order is what counts, not the number.
-     */
+    
+
+
     @Transactional
     fun bulkDeleteTestcases(assessmentId: String, questionId: String, testcaseIds: List<String>) {
-        assessmentAccessService.findManageableAssessment(assessmentId) // ensure write access to the assessment and question
+        assessmentAccessService.findManageableAssessment(assessmentId)
 
         assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
-            ?: throw NotFoundException("Questão não encontrada.") // ensure the question belongs to the assessment
+            ?: throw NotFoundException("Questão não encontrada.")
 
         if (testcaseIds.isEmpty()) {
             throw BadRequestException("Selecione ao menos um caso de teste.")
@@ -217,15 +215,15 @@ class AssessmentQuestionTestcaseService(
         val testcases = assessmentQuestionTestcaseRepository.findByQuestionIdAndIdInOrderByPositionAsc(questionId, testcaseIds)
 
         if (testcases.size != testcaseIds.toSet().size) {
-            throw NotFoundException("Caso de teste não encontrado.") // every id must belong to the question
+            throw NotFoundException("Caso de teste não encontrado.")
         }
 
+        requireGradingTestcasesKept(assessmentId, testcases)
         assessmentQuestionTestcaseRepository.deleteAll(testcases)
     }
 
-    /**
-     * allows a teacher to import test cases from inputs and outputs file to a question of an assessment in a cohort they teach.
-     */
+    
+
     @Transactional
     fun importTestcases(
         assessmentId: String,
@@ -234,10 +232,10 @@ class AssessmentQuestionTestcaseService(
         inputs: org.springframework.web.multipart.MultipartFile,
         outputs: org.springframework.web.multipart.MultipartFile
     ): List<GetAssessmentQuestionTestcaseResponse> {
-        assessmentAccessService.findManageableAssessment(assessmentId) // ensure write access to the assessment and question
+        assessmentAccessService.findManageableAssessment(assessmentId)
 
         val question = assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
-            ?: throw NotFoundException("Questão não encontrada.") // ensure the question belongs to the assessment
+            ?: throw NotFoundException("Questão não encontrada.")
 
         val inputLines = inputs.inputStream.bufferedReader().readLines()
         val outputLines = outputs.inputStream.bufferedReader().readLines()
@@ -267,19 +265,18 @@ class AssessmentQuestionTestcaseService(
         }
     }
 
-    /**
-     * allows a teacher to reorder a batch of test cases of a question of an assessment in a cohort they teach.
-     */
+    
+
     @Transactional
     fun reorderTestcases(
         assessmentId: String,
         questionId: String,
         newOrder: List<String>
     ): List<GetAssessmentQuestionTestcaseResponse> {
-        assessmentAccessService.findManageableAssessment(assessmentId) // ensure write access to the assessment and question
+        assessmentAccessService.findManageableAssessment(assessmentId)
 
         assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
-            ?: throw NotFoundException("Questão não encontrada.") // ensure the question belongs to the assessment
+            ?: throw NotFoundException("Questão não encontrada.")
 
         val testcases = assessmentQuestionTestcaseRepository.findByQuestionIdOrderByPositionAsc(questionId)
 
@@ -290,8 +287,6 @@ class AssessmentQuestionTestcaseService(
         val testcasesById = testcases.associateBy { it.id!! }
         val reorderedTestcases = newOrder.map { testcaseId -> testcasesById.getValue(testcaseId) }
 
-        // positions are unique per question and the constraint is checked row by row,
-        // so every test case first moves to a free negative slot, then to its final place
         reorderedTestcases.forEachIndexed { index, testcase -> testcase.position = -(index + 1) }
         assessmentQuestionTestcaseRepository.saveAllAndFlush(reorderedTestcases)
 
@@ -303,13 +298,21 @@ class AssessmentQuestionTestcaseService(
         }
     }
 
-    /**
-     * Returns the next available position for a test case in a question.
-     */
+    
+
     private val AssessmentQuestion.nextAvailablePosition: Int
         get() {
             val maxPosition = assessmentQuestionTestcaseRepository.findMaxPositionByQuestionId(this.id!!)
 
             return (maxPosition ?: 0) + 1
         }
+
+    
+
+
+    private fun requireGradingTestcasesKept(assessmentId: String, testcases: List<AssessmentQuestionTestcase>) {
+        if (testcases.any { it.type != AssessmentQuestionTestcaseType.PUBLIC } && assessmentSessionRepository.existsByAssessmentId(assessmentId)) {
+            throw ConflictException("Estudantes já iniciaram a atividade: casos de teste privados e de avaliação não podem ser excluídos.")
+        }
+    }
 }

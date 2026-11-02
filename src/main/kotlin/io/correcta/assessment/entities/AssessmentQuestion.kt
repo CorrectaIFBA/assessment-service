@@ -19,6 +19,10 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener
         UniqueConstraint(
             name = "uk_assessment_question_assessment_position",
             columnNames = ["assessment_id", "position"]
+        ),
+        UniqueConstraint(
+            name = "uk_assessment_question_assessment_slug",
+            columnNames = ["assessment_id", "slug"]
         )
     ]
 )
@@ -35,13 +39,18 @@ class AssessmentQuestion(
     @Column(nullable = false)
     var position: Int,
 
-    @Column(nullable = false, columnDefinition = "TEXT") // markdown or html
+    @Column(nullable = false, length = 255)
+    var title: String,
+
+    @Column(nullable = false, length = 160)
+    var slug: String,
+
+    @Column(nullable = false, columnDefinition = "TEXT")
     var statement: String,
 
-    /**
-     * the languages the student may answer in, each with the starting code handed to them. never empty,
-     * and at most one draft per language.
-     */
+    
+
+
     @ElementCollection
     @CollectionTable(
         name = "assessment_question_code_drafts",
@@ -53,7 +62,7 @@ class AssessmentQuestion(
     @BatchSize(size = 50)
     var codeDrafts: MutableList<CodeDraft> = mutableListOf(),
 
-    @Column(nullable = false) // the grade of the assessment is the sum of the maximum grades of all questions
+    @Column(nullable = false)
     var maximumGrade: BigDecimal,
 
     @Column(nullable = false)

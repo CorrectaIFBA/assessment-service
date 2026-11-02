@@ -11,8 +11,6 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.filter.OncePerRequestFilter
 
 
-
-
 class HeaderAuthenticationFilter : OncePerRequestFilter() {
 
     override fun doFilterInternal(

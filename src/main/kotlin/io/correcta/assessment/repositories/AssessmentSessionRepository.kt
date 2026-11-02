@@ -14,17 +14,28 @@ import org.springframework.stereotype.Repository
 interface AssessmentSessionRepository : JpaRepository<AssessmentSession, String> {
     fun findByAssessmentId(assessmentId: String, pageable: Pageable): Page<AssessmentSession>
 
-    fun findByAssessmentIdAndState(assessmentId: String, state: AssessmentSessionState, pageable: Pageable): Page<AssessmentSession>
+    fun findByAssessmentIdAndState(
+        assessmentId: String,
+        state: AssessmentSessionState,
+        pageable: Pageable
+    ): Page<AssessmentSession>
 
     fun findByIdAndAssessmentId(id: String, assessmentId: String): AssessmentSession?
 
     fun findByAssessmentIdAndStudentProfileId(assessmentId: String, studentProfileId: String): AssessmentSession?
 
-    fun findByAssessmentIdInAndStudentProfileId(assessmentIds: Collection<String>, studentProfileId: String): List<AssessmentSession>
+    fun findByAssessmentIdInAndStudentProfileId(
+        assessmentIds: Collection<String>,
+        studentProfileId: String
+    ): List<AssessmentSession>
 
     fun findByStudentProfileId(studentProfileId: String, pageable: Pageable): Page<AssessmentSession>
 
-    fun findByStudentProfileIdAndState(studentProfileId: String, state: AssessmentSessionState, pageable: Pageable): Page<AssessmentSession>
+    fun findByStudentProfileIdAndState(
+        studentProfileId: String,
+        state: AssessmentSessionState,
+        pageable: Pageable
+    ): Page<AssessmentSession>
 
     fun findByAssessmentIdAndState(assessmentId: String, state: AssessmentSessionState): List<AssessmentSession>
 

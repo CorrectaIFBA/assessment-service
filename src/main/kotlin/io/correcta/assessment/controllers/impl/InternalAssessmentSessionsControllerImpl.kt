@@ -10,7 +10,10 @@ class InternalAssessmentSessionsControllerImpl(
     val assessmentSessionService: AssessmentSessionService
 ) : InternalAssessmentSessionsController {
 
-    override fun getSubmissionStatus(assessmentId: String, studentProfileId: String): GetSessionSubmissionStatusResponse {
+    override fun getSubmissionStatus(
+        assessmentId: String,
+        studentProfileId: String
+    ): GetSessionSubmissionStatusResponse {
         return assessmentSessionService.getSubmissionStatus(assessmentId, studentProfileId)
     }
 }

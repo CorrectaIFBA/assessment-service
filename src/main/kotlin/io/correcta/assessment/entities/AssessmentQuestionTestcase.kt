@@ -1,9 +1,7 @@
 package io.correcta.assessment.entities
 
 import jakarta.persistence.*
-import java.math.BigDecimal
 import java.time.Instant
-import org.hibernate.annotations.BatchSize
 import org.hibernate.annotations.UuidGenerator
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
@@ -13,7 +11,10 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener
 @Table(
     name = "assessment_question_testcases",
     indexes = [
-        Index(name = "idx_assessment_question_testcase_question_position", columnList = "assessment_question_id, position")
+        Index(
+            name = "idx_assessment_question_testcase_question_position",
+            columnList = "assessment_question_id, position"
+        )
     ],
     uniqueConstraints = [
         UniqueConstraint(

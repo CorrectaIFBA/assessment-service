@@ -7,28 +7,19 @@ import io.correcta.assessment.entities.AssessmentState
 import io.correcta.assessment.exceptions.BadRequestException
 import io.correcta.assessment.exceptions.ConflictException
 import io.correcta.assessment.exceptions.NotFoundException
-import io.correcta.assessment.models.request.AssessmentFilterRequest
-import io.correcta.assessment.models.request.AssessmentParametersRequest
-import io.correcta.assessment.models.request.ChangeAssessmentParametersRequest
-import io.correcta.assessment.models.request.CreateAssessmentRequest
-import io.correcta.assessment.models.request.PaginationRequest
-import io.correcta.assessment.models.request.UpdateAssessmentRequest
+import io.correcta.assessment.models.request.*
 import io.correcta.assessment.models.response.GetAssessmentResponse
 import io.correcta.assessment.models.response.PagedResponse
-import io.correcta.assessment.repositories.AssessmentParameterChangeLogRepository
-import io.correcta.assessment.repositories.AssessmentParametersRepository
-import io.correcta.assessment.repositories.AssessmentQuestionRepository
-import io.correcta.assessment.repositories.AssessmentRepository
-import io.correcta.assessment.repositories.AssessmentResultRepository
+import io.correcta.assessment.repositories.*
 import io.correcta.assessment.repositories.specifications.AssessmentSpecifications
 import io.correcta.assessment.utils.PaginationExt.toPageRequest
 import io.correcta.assessment.utils.PaginationExt.toPagedResponse
 import io.correcta.assessment.utils.SlugExt.toSlug
 import io.correcta.assessment.utils.SlugExt.uniqueSlug
+import java.math.BigDecimal
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.math.BigDecimal
 
 @Service
 class AssessmentService(
@@ -40,9 +31,6 @@ class AssessmentService(
     val assessmentAccessService: AssessmentAccessService,
     val assessmentSessionService: AssessmentSessionService,
 ) {
-
-    
-
 
 
     @Transactional(readOnly = true)
@@ -88,9 +76,6 @@ class AssessmentService(
         }
     }
 
-    
-
-
 
     @Transactional(readOnly = true)
     fun getAssessment(assessmentId: String): GetAssessmentResponse {
@@ -98,8 +83,6 @@ class AssessmentService(
 
         return respond(assessment, assessmentParametersRepository.findByAssessmentId(assessmentId))
     }
-
-    
 
 
     @Transactional(readOnly = true)
@@ -109,9 +92,6 @@ class AssessmentService(
 
         return getAssessment(assessment.id!!)
     }
-
-    
-
 
 
     @Transactional
@@ -127,7 +107,12 @@ class AssessmentService(
                 cohortId = cohortId,
                 title = request.title.trim(),
                 slug = request.slug?.also { requireSlugAvailable(cohortId, it, assessmentId = null) }
-                    ?: uniqueSlug(request.title.toSlug(FALLBACK_SLUG)) { assessmentRepository.existsByCohortIdAndSlug(cohortId, it) },
+                    ?: uniqueSlug(request.title.toSlug(FALLBACK_SLUG)) {
+                        assessmentRepository.existsByCohortIdAndSlug(
+                            cohortId,
+                            it
+                        )
+                    },
                 description = request.description.normalized(),
                 dueDate = request.dueDate,
             )
@@ -140,14 +125,11 @@ class AssessmentService(
         return respond(assessment, parameters)
     }
 
-    
 
     @Transactional
     fun publishAssessment(assessmentId: String): GetAssessmentResponse {
         return changeState(assessmentId, AssessmentState.PUBLISHED, "A atividade já está publicada.")
     }
-
-    
 
 
     @Transactional
@@ -155,7 +137,6 @@ class AssessmentService(
         return changeState(assessmentId, AssessmentState.ARCHIVED, "A atividade já está arquivada.")
     }
 
-    
 
     @Transactional
     fun editAssessment(assessmentId: String, request: UpdateAssessmentRequest): GetAssessmentResponse {
@@ -174,8 +155,6 @@ class AssessmentService(
             assessmentParametersRepository.findByAssessmentId(assessmentId)
         )
     }
-
-    
 
 
     @Transactional
@@ -215,7 +194,11 @@ class AssessmentService(
         return respond(assessment, savedParameters)
     }
 
-    private fun changeState(assessmentId: String, targetState: AssessmentState, alreadyInStateMessage: String): GetAssessmentResponse {
+    private fun changeState(
+        assessmentId: String,
+        targetState: AssessmentState,
+        alreadyInStateMessage: String
+    ): GetAssessmentResponse {
         val assessment = assessmentAccessService.findManageableAssessment(assessmentId)
 
         if (assessment.state == targetState) {
@@ -238,8 +221,6 @@ class AssessmentService(
         )
     }
 
-    
-
 
     private fun respond(assessment: Assessment, parameters: AssessmentParameters?): GetAssessmentResponse {
         val assessmentIds = listOf(assessment.id!!)
@@ -259,13 +240,15 @@ class AssessmentService(
         return assessmentQuestionRepository.summarizeByAssessmentIds(assessmentIds).associateBy { it.assessmentId }
     }
 
-    
 
     private fun scores(assessmentIds: List<String>): Map<String, BigDecimal?> {
         if (assessmentIds.isEmpty()) return emptyMap()
 
         return assessmentResultRepository
-            .findByAssessmentIdInAndStudentProfileId(assessmentIds, assessmentAccessService.getAuthenticatedProfile().profileId)
+            .findByAssessmentIdInAndStudentProfileId(
+                assessmentIds,
+                assessmentAccessService.getAuthenticatedProfile().profileId
+            )
             .associate { it.assessment.id!! to it.finalScore }
     }
 
@@ -280,8 +263,6 @@ class AssessmentService(
 
         if (taken) throw ConflictException("Já existe uma atividade com o slug '$slug' nesta turma.")
     }
-
-    
 
 
     private fun AssessmentParameters.snapshot(): Map<String, Any?> = mapOf(

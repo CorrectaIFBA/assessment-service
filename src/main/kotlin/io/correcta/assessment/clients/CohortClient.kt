@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 
 
-
 @FeignClient(
     name = "cohort-service",
     url = "\${clients.cohort-service.url}"

@@ -9,8 +9,6 @@ import org.springframework.data.annotation.LastModifiedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
 
 
-
-
 @Entity
 @Table(
     name = "assessment_results",
@@ -34,7 +32,6 @@ class AssessmentResult(
     @JoinColumn(name = "assessment_id", nullable = false)
     var assessment: Assessment,
 
-    
 
     @Column(name = "student_profile_id", nullable = false, updatable = false)
     var studentProfileId: String,
@@ -45,7 +42,6 @@ class AssessmentResult(
     @Column(columnDefinition = "TEXT")
     var generalComment: String? = null,
 
-    
 
     @Column(name = "graded_by_profile_id")
     var gradedByProfileId: String? = null,

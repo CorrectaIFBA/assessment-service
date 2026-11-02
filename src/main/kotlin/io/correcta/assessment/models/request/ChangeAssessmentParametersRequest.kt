@@ -8,7 +8,10 @@ data class ChangeAssessmentParametersRequest(
     @field:Schema(description = "Whether submissions are accepted after the due date. Null keeps the current value.")
     val canBeSubmittedAfterDueDate: Boolean? = null,
 
-    @field:Schema(description = "Time limit in minutes. 0 removes the time limit. Null keeps the current value.", example = "90")
+    @field:Schema(
+        description = "Time limit in minutes. 0 removes the time limit. Null keeps the current value.",
+        example = "90"
+    )
     @field:Min(value = 0, message = "O tempo máximo deve ser maior ou igual a 0")
     val maximumTimeAllowed: Int? = null,
 
@@ -22,6 +25,8 @@ data class ChangeAssessmentParametersRequest(
         canBeSubmittedAfterDueDate?.let { assessmentParameters.canBeSubmittedAfterDueDate = it }
         maximumTimeAllowed?.let { assessmentParameters.maximumTimeAllowed = if (it == 0) null else it }
         showCompilationErrors?.let { assessmentParameters.showCompilationErrors = it }
-        canViewDefinitiveTestcaseScoringAfterSubmission?.let { assessmentParameters.canViewDefinitiveTestcaseScoringAfterSubmission = it }
+        canViewDefinitiveTestcaseScoringAfterSubmission?.let {
+            assessmentParameters.canViewDefinitiveTestcaseScoringAfterSubmission = it
+        }
     }
 }

@@ -16,8 +16,6 @@ import jakarta.persistence.LockModeType
 import org.springframework.stereotype.Service
 
 
-
-
 @Service
 class AssessmentAccessService(
     val assessmentRepository: AssessmentRepository,
@@ -27,21 +25,20 @@ class AssessmentAccessService(
     val entityManager: EntityManager,
 ) {
 
-    
-
 
     fun findReadableAssessment(assessmentId: String): Assessment {
         return findReadableAssessmentWithMembership(assessmentId).first
     }
-
-    
 
 
     fun findAssessmentWithVisibleQuestions(assessmentId: String): Assessment {
         val (assessment, membership) = findReadableAssessmentWithMembership(assessmentId)
 
         if (!membership.isFaculty() &&
-            assessmentSessionRepository.findByAssessmentIdAndStudentProfileId(assessmentId, membership.profileId) == null
+            assessmentSessionRepository.findByAssessmentIdAndStudentProfileId(
+                assessmentId,
+                membership.profileId
+            ) == null
         ) {
             throw ForbiddenException("Inicie a atividade para ver as questões.")
         }
@@ -49,7 +46,6 @@ class AssessmentAccessService(
         return assessment
     }
 
-    
 
     fun findReadableAssessmentWithMembership(assessmentId: String): Pair<Assessment, CohortMembershipResponse> {
         val assessment = findAssessment(assessmentId)
@@ -61,9 +57,6 @@ class AssessmentAccessService(
 
         return assessment to membership
     }
-
-    
-
 
 
     fun findManageableAssessment(assessmentId: String): Assessment {
@@ -89,7 +82,6 @@ class AssessmentAccessService(
         return membership
     }
 
-    
 
     fun requireCohortMember(cohortId: String): CohortMembershipResponse {
         return cohortMembershipService.findCurrentMembership(cohortId, getAuthenticatedProfile().profileId)

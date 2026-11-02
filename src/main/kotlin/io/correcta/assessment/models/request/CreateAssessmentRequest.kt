@@ -15,7 +15,10 @@ data class CreateAssessmentRequest(
     @field:Size(max = 255, message = "O título deve ter no máximo 255 caracteres")
     val title: String,
 
-    @field:Schema(description = "Address of the assessment in its cohort's URL, unique inside the cohort. Generated from the title when omitted.", example = "lista-1")
+    @field:Schema(
+        description = "Address of the assessment in its cohort's URL, unique inside the cohort. Generated from the title when omitted.",
+        example = "lista-1"
+    )
     @field:Size(max = SLUG_MAX_LENGTH, message = "O slug deve ter no máximo 160 caracteres")
     @field:Pattern(regexp = SLUG_PATTERN, message = "O slug deve conter apenas letras minúsculas, números e hífens")
     val slug: String? = null,

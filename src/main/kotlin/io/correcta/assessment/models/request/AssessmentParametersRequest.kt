@@ -13,10 +13,16 @@ data class AssessmentParametersRequest(
     @field:Min(value = 1, message = "O tempo máximo deve ser de pelo menos 1 minuto")
     val maximumTimeAllowed: Int? = null,
 
-    @field:Schema(description = "Whether the editor shows compilation errors while the student writes; off, only on submission.", defaultValue = "true")
+    @field:Schema(
+        description = "Whether the editor shows compilation errors while the student writes; off, only on submission.",
+        defaultValue = "true"
+    )
     val showCompilationErrors: Boolean = true,
 
-    @field:Schema(description = "Whether the student may view the definitive test case scoring after submission.", defaultValue = "true")
+    @field:Schema(
+        description = "Whether the student may view the definitive test case scoring after submission.",
+        defaultValue = "true"
+    )
     val canViewDefinitiveTestcaseScoringAfterSubmission: Boolean = true,
 ) {
     fun toAssessmentParameters(assessment: Assessment): AssessmentParameters {

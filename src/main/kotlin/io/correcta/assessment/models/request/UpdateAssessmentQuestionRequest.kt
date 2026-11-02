@@ -4,14 +4,7 @@ import io.correcta.assessment.utils.SlugExt.SLUG_MAX_LENGTH
 import io.correcta.assessment.utils.SlugExt.SLUG_PATTERN
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.Valid
-import jakarta.validation.constraints.DecimalMin
-import jakarta.validation.constraints.Digits
-import jakarta.validation.constraints.Min
-import jakarta.validation.constraints.NotBlank
-import jakarta.validation.constraints.NotEmpty
-import jakarta.validation.constraints.NotNull
-import jakarta.validation.constraints.Pattern
-import jakarta.validation.constraints.Size
+import jakarta.validation.constraints.*
 import java.math.BigDecimal
 
 data class UpdateAssessmentQuestionRequest(
@@ -25,7 +18,10 @@ data class UpdateAssessmentQuestionRequest(
     @field:Size(max = 255, message = "O título deve ter no máximo 255 caracteres")
     val title: String,
 
-    @field:Schema(description = "Address of the question in its assessment's URL, unique inside the assessment. Kept as is when omitted.", example = "soma-de-dois-numeros")
+    @field:Schema(
+        description = "Address of the question in its assessment's URL, unique inside the assessment. Kept as is when omitted.",
+        example = "soma-de-dois-numeros"
+    )
     @field:Size(max = SLUG_MAX_LENGTH, message = "O slug deve ter no máximo 160 caracteres")
     @field:Pattern(regexp = SLUG_PATTERN, message = "O slug deve conter apenas letras minúsculas, números e hífens")
     val slug: String? = null,
@@ -39,10 +35,17 @@ data class UpdateAssessmentQuestionRequest(
     @field:Valid
     val codeDrafts: List<CodeDraftRequest> = emptyList(),
 
-    @field:Schema(description = "Maximum grade of the question. The assessment grade is the sum of all questions.", example = "2.5")
+    @field:Schema(
+        description = "Maximum grade of the question. The assessment grade is the sum of all questions.",
+        example = "2.5"
+    )
     @field:NotNull(message = "A nota máxima é obrigatória")
     @field:DecimalMin(value = "0", message = "A nota máxima deve ser maior ou igual a 0")
-    @field:Digits(integer = 3, fraction = 2, message = "A nota máxima deve ter no máximo 3 dígitos inteiros e 2 decimais")
+    @field:Digits(
+        integer = 3,
+        fraction = 2,
+        message = "A nota máxima deve ter no máximo 3 dígitos inteiros e 2 decimais"
+    )
     var maximumGrade: BigDecimal?,
 
     @field:Schema(description = "Whether students may copy and paste in this question.", defaultValue = "true")

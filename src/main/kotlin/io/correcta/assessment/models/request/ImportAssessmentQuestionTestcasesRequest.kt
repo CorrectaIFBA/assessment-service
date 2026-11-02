@@ -17,7 +17,10 @@ data class ImportAssessmentQuestionTestcasesRequest(
     @field:Max(value = 1024, message = "O limite de memória deve ser de no máximo 1024 MB")
     val memoryLimitMB: Int = 256,
 
-    @field:Schema(description = "Visibility of the test case to students: PUBLIC shows everything, PRIVATE shows only that it exists, EVALUATION hides it.", example = "PUBLIC")
+    @field:Schema(
+        description = "Visibility of the test case to students: PUBLIC shows everything, PRIVATE shows only that it exists, EVALUATION hides it.",
+        example = "PUBLIC"
+    )
     @field:NotNull(message = "O tipo do caso de teste é obrigatório")
     var type: AssessmentQuestionTestcaseType?,
 )

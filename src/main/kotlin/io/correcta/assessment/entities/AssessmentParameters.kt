@@ -1,7 +1,6 @@
 package io.correcta.assessment.entities
 
 import jakarta.persistence.*
-import java.math.BigDecimal
 import java.time.Instant
 import org.hibernate.annotations.UuidGenerator
 import org.springframework.data.annotation.CreatedDate
@@ -32,8 +31,6 @@ class AssessmentParameters(
 
     @Column(nullable = true)
     var maximumTimeAllowed: Int? = null,
-
-    
 
 
     @Column(nullable = false)

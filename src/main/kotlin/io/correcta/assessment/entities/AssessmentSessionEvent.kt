@@ -5,7 +5,6 @@ import java.time.Instant
 import org.hibernate.annotations.UuidGenerator
 
 
-
 @Entity
 @Table(
     name = "assessment_session_events",
@@ -26,7 +25,6 @@ class AssessmentSessionEvent(
     @Enumerated(EnumType.STRING)
     var type: AssessmentSessionEventType,
 
-    
 
     @Column(nullable = false)
     var occurredAt: Instant,
@@ -34,7 +32,6 @@ class AssessmentSessionEvent(
     @Column(nullable = false)
     var receivedAt: Instant,
 
-    
 
     @Column(name = "actor_profile_id")
     var actorProfileId: String? = null,

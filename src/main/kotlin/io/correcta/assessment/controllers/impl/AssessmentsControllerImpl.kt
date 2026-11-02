@@ -1,11 +1,7 @@
 package io.correcta.assessment.controllers.impl
 
 import io.correcta.assessment.controllers.AssessmentsController
-import io.correcta.assessment.models.request.AssessmentFilterRequest
-import io.correcta.assessment.models.request.ChangeAssessmentParametersRequest
-import io.correcta.assessment.models.request.CreateAssessmentRequest
-import io.correcta.assessment.models.request.PaginationRequest
-import io.correcta.assessment.models.request.UpdateAssessmentRequest
+import io.correcta.assessment.models.request.*
 import io.correcta.assessment.models.response.GetAssessmentResponse
 import io.correcta.assessment.models.response.PagedResponse
 import io.correcta.assessment.service.AssessmentService
@@ -16,7 +12,10 @@ class AssessmentsControllerImpl(
     val assessmentService: AssessmentService
 ) : AssessmentsController {
 
-    override fun getMyAssessments(filter: AssessmentFilterRequest, pagination: PaginationRequest): PagedResponse<GetAssessmentResponse> {
+    override fun getMyAssessments(
+        filter: AssessmentFilterRequest,
+        pagination: PaginationRequest
+    ): PagedResponse<GetAssessmentResponse> {
         return assessmentService.getMyAssessments(filter, pagination)
     }
 
@@ -44,7 +43,10 @@ class AssessmentsControllerImpl(
         return assessmentService.editAssessment(assessmentId, body)
     }
 
-    override fun changeAssessmentParameters(assessmentId: String, body: ChangeAssessmentParametersRequest): GetAssessmentResponse {
+    override fun changeAssessmentParameters(
+        assessmentId: String,
+        body: ChangeAssessmentParametersRequest
+    ): GetAssessmentResponse {
         return assessmentService.changeAssessmentParameters(assessmentId, body)
     }
 }

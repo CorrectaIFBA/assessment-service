@@ -1,11 +1,11 @@
 package io.correcta.assessment.models.response
 
-import io.correcta.assessment.repositories.AssessmentQuestionRepository
-import io.swagger.v3.oas.annotations.media.Schema
-import java.math.BigDecimal
 import io.correcta.assessment.entities.Assessment
 import io.correcta.assessment.entities.AssessmentParameters
 import io.correcta.assessment.entities.AssessmentState
+import io.correcta.assessment.repositories.AssessmentQuestionRepository
+import io.swagger.v3.oas.annotations.media.Schema
+import java.math.BigDecimal
 
 data class GetAssessmentResponse(
     val id: String,

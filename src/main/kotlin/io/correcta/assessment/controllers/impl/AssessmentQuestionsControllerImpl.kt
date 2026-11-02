@@ -20,7 +20,10 @@ class AssessmentQuestionsControllerImpl(
         return assessmentQuestionService.getQuestion(assessmentId, questionId)
     }
 
-    override fun createQuestion(assessmentId: String, body: CreateAssessmentQuestionRequest): GetAssessmentQuestionResponse {
+    override fun createQuestion(
+        assessmentId: String,
+        body: CreateAssessmentQuestionRequest
+    ): GetAssessmentQuestionResponse {
         return assessmentQuestionService.createQuestion(assessmentId, body)
     }
 

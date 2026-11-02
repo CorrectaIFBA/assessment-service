@@ -25,8 +25,6 @@ class AssessmentQuestionTestcaseService(
     val assessmentSessionRepository: AssessmentSessionRepository,
 ) {
 
-    
-
 
     @Transactional(readOnly = true)
     fun getTestcases(assessmentId: String, questionId: String): List<GetAssessmentQuestionTestcaseResponse> {
@@ -50,8 +48,6 @@ class AssessmentQuestionTestcaseService(
             GetAssessmentQuestionTestcaseResponse.fromTestcase(testcase, isFaculty)
         }
     }
-
-    
 
 
     @Transactional
@@ -90,7 +86,6 @@ class AssessmentQuestionTestcaseService(
         return GetAssessmentQuestionTestcaseResponse.fromTestcase(testcase, isFaculty = true)
     }
 
-    
 
     @Transactional
     fun updateTestcase(
@@ -109,7 +104,8 @@ class AssessmentQuestionTestcaseService(
 
         request.position?.let { position ->
             if (position != testcase.position) {
-                val existingTestcase = assessmentQuestionTestcaseRepository.findByQuestionIdAndPosition(questionId, position)
+                val existingTestcase =
+                    assessmentQuestionTestcaseRepository.findByQuestionIdAndPosition(questionId, position)
                 if (existingTestcase != null) {
                     throw ConflictException("Já existe um caso de teste na posição $position.")
                 }
@@ -142,7 +138,6 @@ class AssessmentQuestionTestcaseService(
         return GetAssessmentQuestionTestcaseResponse.fromTestcase(updatedTestcase, isFaculty = true)
     }
 
-    
 
     @Transactional
     fun bulkUpdateTestcases(
@@ -155,7 +150,10 @@ class AssessmentQuestionTestcaseService(
         assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
             ?: throw NotFoundException("Questão não encontrada.")
 
-        val testcases = assessmentQuestionTestcaseRepository.findByQuestionIdAndIdInOrderByPositionAsc(questionId, request.testCaseIds)
+        val testcases = assessmentQuestionTestcaseRepository.findByQuestionIdAndIdInOrderByPositionAsc(
+            questionId,
+            request.testCaseIds
+        )
 
         if (testcases.size != request.testCaseIds.toSet().size) {
             throw NotFoundException("Caso de teste não encontrado.")
@@ -182,7 +180,6 @@ class AssessmentQuestionTestcaseService(
         }
     }
 
-    
 
     @Transactional
     fun deleteTestcase(assessmentId: String, questionId: String, testcaseId: String) {
@@ -198,8 +195,6 @@ class AssessmentQuestionTestcaseService(
         assessmentQuestionTestcaseRepository.delete(testcase)
     }
 
-    
-
 
     @Transactional
     fun bulkDeleteTestcases(assessmentId: String, questionId: String, testcaseIds: List<String>) {
@@ -212,7 +207,8 @@ class AssessmentQuestionTestcaseService(
             throw BadRequestException("Selecione ao menos um caso de teste.")
         }
 
-        val testcases = assessmentQuestionTestcaseRepository.findByQuestionIdAndIdInOrderByPositionAsc(questionId, testcaseIds)
+        val testcases =
+            assessmentQuestionTestcaseRepository.findByQuestionIdAndIdInOrderByPositionAsc(questionId, testcaseIds)
 
         if (testcases.size != testcaseIds.toSet().size) {
             throw NotFoundException("Caso de teste não encontrado.")
@@ -222,7 +218,6 @@ class AssessmentQuestionTestcaseService(
         assessmentQuestionTestcaseRepository.deleteAll(testcases)
     }
 
-    
 
     @Transactional
     fun importTestcases(
@@ -265,7 +260,6 @@ class AssessmentQuestionTestcaseService(
         }
     }
 
-    
 
     @Transactional
     fun reorderTestcases(
@@ -298,7 +292,6 @@ class AssessmentQuestionTestcaseService(
         }
     }
 
-    
 
     private val AssessmentQuestion.nextAvailablePosition: Int
         get() {
@@ -307,11 +300,11 @@ class AssessmentQuestionTestcaseService(
             return (maxPosition ?: 0) + 1
         }
 
-    
-
 
     private fun requireGradingTestcasesKept(assessmentId: String, testcases: List<AssessmentQuestionTestcase>) {
-        if (testcases.any { it.type != AssessmentQuestionTestcaseType.PUBLIC } && assessmentSessionRepository.existsByAssessmentId(assessmentId)) {
+        if (testcases.any { it.type != AssessmentQuestionTestcaseType.PUBLIC } && assessmentSessionRepository.existsByAssessmentId(
+                assessmentId
+            )) {
             throw ConflictException("Estudantes já iniciaram a atividade: casos de teste privados e de avaliação não podem ser excluídos.")
         }
     }

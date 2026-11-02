@@ -12,30 +12,25 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springdoc.core.annotations.ParameterObject
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.*
 
 @RequestMapping("/api/v1/assessments/{assessmentId}/sessions")
-@Tag(name = "Assessment Sessions", description = "A student's attempt at an assessment: start, heartbeats and submission.")
+@Tag(
+    name = "Assessment Sessions",
+    description = "A student's attempt at an assessment: start, heartbeats and submission."
+)
 interface AssessmentSessionsController {
 
-    
 
     @GetMapping("/me")
     @IsLoggedUser
     fun getMySession(@PathVariable assessmentId: String): GetAssessmentSessionResponse
-
-    
 
 
     @PostMapping("/me/start")
     @IsLoggedUser
     fun startSession(@PathVariable assessmentId: String): ResponseEntity<GetAssessmentSessionResponse>
 
-    
 
     @PostMapping("/me/heartbeat")
     @IsLoggedUser
@@ -45,7 +40,6 @@ interface AssessmentSessionsController {
     @IsLoggedUser
     fun submitSession(@PathVariable assessmentId: String): GetAssessmentSessionResponse
 
-    
 
     @GetMapping
     @IsLoggedUser
@@ -55,7 +49,6 @@ interface AssessmentSessionsController {
         @Valid @ParameterObject pagination: PaginationRequest
     ): PagedResponse<GetAssessmentSessionResponse>
 
-    
 
     @GetMapping("/summary")
     @IsLoggedUser
@@ -67,9 +60,11 @@ interface AssessmentSessionsController {
 
     @GetMapping("/{sessionId}/events")
     @IsLoggedUser
-    fun getSessionEvents(@PathVariable assessmentId: String, @PathVariable sessionId: String): List<GetAssessmentSessionEventResponse>
+    fun getSessionEvents(
+        @PathVariable assessmentId: String,
+        @PathVariable sessionId: String
+    ): List<GetAssessmentSessionEventResponse>
 
-    
 
     @PostMapping("/{sessionId}/reopen")
     @IsLoggedUser
@@ -79,7 +74,6 @@ interface AssessmentSessionsController {
         @Valid @RequestBody body: SessionTimeChangeRequest
     ): GetAssessmentSessionResponse
 
-    
 
     @PostMapping("/{sessionId}/extend")
     @IsLoggedUser
@@ -89,7 +83,6 @@ interface AssessmentSessionsController {
         @Valid @RequestBody body: SessionTimeChangeRequest
     ): GetAssessmentSessionResponse
 
-    
 
     @PostMapping("/{sessionId}/close")
     @IsLoggedUser

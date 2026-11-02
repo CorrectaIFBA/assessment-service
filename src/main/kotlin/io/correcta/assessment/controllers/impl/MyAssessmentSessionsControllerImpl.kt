@@ -13,7 +13,10 @@ class MyAssessmentSessionsControllerImpl(
     val assessmentSessionService: AssessmentSessionService
 ) : MyAssessmentSessionsController {
 
-    override fun getMySessions(filter: SessionFilterRequest, pagination: PaginationRequest): PagedResponse<GetAssessmentSessionResponse> {
+    override fun getMySessions(
+        filter: SessionFilterRequest,
+        pagination: PaginationRequest
+    ): PagedResponse<GetAssessmentSessionResponse> {
         return assessmentSessionService.getMySessions(filter, pagination)
     }
 }

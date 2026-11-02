@@ -30,11 +30,10 @@ class AssessmentSession(
     @JoinColumn(name = "assessment_id", nullable = false)
     var assessment: Assessment,
 
-    
 
     @Column(name = "student_profile_id", nullable = false, updatable = false)
     var studentProfileId: String,
-    
+
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     var state: AssessmentSessionState = AssessmentSessionState.IN_PROGRESS,
@@ -47,12 +46,9 @@ class AssessmentSession(
     @Column(nullable = false)
     var updatedAt: Instant? = null,
 
-    
 
     @Column(nullable = false, updatable = false)
     var startedAt: Instant,
-
-    
 
 
     @Column
@@ -61,7 +57,6 @@ class AssessmentSession(
     @Column
     var lastHeartbeatAt: Instant? = null,
 
-    
 
     @Column(nullable = false)
     var openSeconds: Int = 0,

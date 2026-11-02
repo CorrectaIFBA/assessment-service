@@ -24,7 +24,6 @@ class AssessmentQuestionService(
     val assessmentSessionRepository: AssessmentSessionRepository,
 ) {
 
-    
 
     @Transactional(readOnly = true)
     fun getQuestions(assessmentId: String): List<GetAssessmentQuestionResponse> {
@@ -42,8 +41,6 @@ class AssessmentQuestionService(
         return GetAssessmentQuestionResponse.fromQuestion(findQuestion(assessmentId, questionId))
     }
 
-    
-
 
     @Transactional
     fun createQuestion(assessmentId: String, request: CreateAssessmentQuestionRequest): GetAssessmentQuestionResponse {
@@ -59,7 +56,10 @@ class AssessmentQuestionService(
                 title = request.title.trim(),
                 slug = request.slug?.also { requireSlugAvailable(assessmentId, it, questionId = null) }
                     ?: uniqueSlug(request.title.toSlug(FALLBACK_SLUG)) {
-                        it in RESERVED_SLUGS || assessmentQuestionRepository.existsByAssessmentIdAndSlug(assessmentId, it)
+                        it in RESERVED_SLUGS || assessmentQuestionRepository.existsByAssessmentIdAndSlug(
+                            assessmentId,
+                            it
+                        )
                     },
                 statement = request.statement.trim(),
                 codeDrafts = codeDraftsOf(request.codeDrafts),
@@ -83,7 +83,10 @@ class AssessmentQuestionService(
 
         requirePositionAvailable(assessmentId, position, questionId)
 
-        if (request.maximumGrade!!.compareTo(question.maximumGrade) != 0 && assessmentSessionRepository.existsByAssessmentId(assessmentId)) {
+        if (request.maximumGrade!!.compareTo(question.maximumGrade) != 0 && assessmentSessionRepository.existsByAssessmentId(
+                assessmentId
+            )
+        ) {
             throw ConflictException("Estudantes já iniciaram a atividade: a nota máxima da questão não pode mudar.")
         }
 
@@ -102,8 +105,6 @@ class AssessmentQuestionService(
         return GetAssessmentQuestionResponse.fromQuestion(assessmentQuestionRepository.saveAndFlush(question))
     }
 
-    
-
 
     @Transactional
     fun deleteQuestion(assessmentId: String, questionId: String) {
@@ -114,14 +115,16 @@ class AssessmentQuestionService(
             throw ConflictException("Estudantes já iniciaram a atividade: a questão não pode ser excluída.")
         }
 
-        if (assessment.state == AssessmentState.PUBLISHED && assessmentQuestionRepository.countByAssessmentId(assessmentId) <= 1) {
+        if (assessment.state == AssessmentState.PUBLISHED && assessmentQuestionRepository.countByAssessmentId(
+                assessmentId
+            ) <= 1
+        ) {
             throw ConflictException("Uma atividade publicada precisa de ao menos uma questão.")
         }
 
         assessmentQuestionRepository.delete(question)
     }
 
-    
 
     private fun codeDraftsOf(requests: List<CodeDraftRequest>): MutableList<CodeDraft> {
         val drafts = requests.map(CodeDraftRequest::toCodeDraft)

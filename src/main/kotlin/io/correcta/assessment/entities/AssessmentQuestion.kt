@@ -48,8 +48,6 @@ class AssessmentQuestion(
     @Column(nullable = false, columnDefinition = "TEXT")
     var statement: String,
 
-    
-
 
     @ElementCollection
     @CollectionTable(

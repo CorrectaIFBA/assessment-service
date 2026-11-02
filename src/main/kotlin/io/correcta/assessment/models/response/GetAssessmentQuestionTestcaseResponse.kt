@@ -18,9 +18,11 @@ data class GetAssessmentQuestionTestcaseResponse(
 
     companion object {
 
-        
 
-        fun fromTestcase(testcase: AssessmentQuestionTestcase, isFaculty: Boolean): GetAssessmentQuestionTestcaseResponse {
+        fun fromTestcase(
+            testcase: AssessmentQuestionTestcase,
+            isFaculty: Boolean
+        ): GetAssessmentQuestionTestcaseResponse {
             return GetAssessmentQuestionTestcaseResponse(
                 id = testcase.id!!,
                 questionId = testcase.question.id!!,

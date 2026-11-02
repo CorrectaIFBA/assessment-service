@@ -11,7 +11,10 @@ data class CodeDraftRequest(
     @field:NotNull(message = "A linguagem do código é obrigatória")
     var language: ProgrammingLanguage?,
 
-    @field:Schema(description = "Starting code handed to the student in this language. Kept as sent, whitespace included.", defaultValue = "")
+    @field:Schema(
+        description = "Starting code handed to the student in this language. Kept as sent, whitespace included.",
+        defaultValue = ""
+    )
     @field:Size(max = 65535, message = "O código inicial deve ter no máximo 65535 caracteres")
     val code: String = "",
 ) {

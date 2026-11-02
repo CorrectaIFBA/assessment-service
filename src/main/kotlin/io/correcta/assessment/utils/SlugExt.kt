@@ -20,7 +20,6 @@ object SlugExt {
         return slug.ifEmpty { fallback }
     }
 
-    
 
     fun uniqueSlug(base: String, isTaken: (String) -> Boolean): String {
         return generateSequence(1) { it + 1 }

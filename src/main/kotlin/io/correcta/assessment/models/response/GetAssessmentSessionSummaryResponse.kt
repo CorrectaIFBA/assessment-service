@@ -5,7 +5,6 @@ import io.correcta.assessment.entities.AssessmentSessionState
 import java.time.Instant
 
 
-
 data class GetAssessmentSessionSummaryResponse(
     val id: String,
     val state: AssessmentSessionState,

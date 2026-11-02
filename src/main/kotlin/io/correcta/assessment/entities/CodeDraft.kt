@@ -6,8 +6,6 @@ import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
 
 
-
-
 @Embeddable
 class CodeDraft(
     @Column(nullable = false)

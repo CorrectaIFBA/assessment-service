@@ -1,11 +1,6 @@
 package io.correcta.assessment.service
 
-import io.correcta.assessment.entities.Assessment
-import io.correcta.assessment.entities.AssessmentSession
-import io.correcta.assessment.entities.AssessmentSessionEvent
-import io.correcta.assessment.entities.AssessmentSessionEventType
-import io.correcta.assessment.entities.AssessmentSessionState
-import io.correcta.assessment.entities.AssessmentState
+import io.correcta.assessment.entities.*
 import io.correcta.assessment.exceptions.ConflictException
 import io.correcta.assessment.exceptions.ForbiddenException
 import io.correcta.assessment.exceptions.NotFoundException
@@ -13,12 +8,7 @@ import io.correcta.assessment.models.request.AssessmentParametersRequest
 import io.correcta.assessment.models.request.PaginationRequest
 import io.correcta.assessment.models.request.SessionFilterRequest
 import io.correcta.assessment.models.request.SessionTimeChangeRequest
-import io.correcta.assessment.models.response.GetAssessmentSessionEventResponse
-import io.correcta.assessment.models.response.GetAssessmentSessionResponse
-import io.correcta.assessment.models.response.GetAssessmentSessionSummaryResponse
-import io.correcta.assessment.models.response.GetSessionSubmissionStatusResponse
-import io.correcta.assessment.models.response.PagedResponse
-import io.correcta.assessment.models.response.isLate
+import io.correcta.assessment.models.response.*
 import io.correcta.assessment.repositories.AssessmentParametersRepository
 import io.correcta.assessment.repositories.AssessmentSessionEventRepository
 import io.correcta.assessment.repositories.AssessmentSessionRepository
@@ -31,13 +21,6 @@ import java.time.Duration
 import java.time.Instant
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-
-
-
-
-
-
-
 
 
 @Service
@@ -54,15 +37,14 @@ class AssessmentSessionService(
     fun getMySession(assessmentId: String): GetAssessmentSessionResponse {
         val (_, membership) = assessmentAccessService.findReadableAssessmentWithMembership(assessmentId)
         val now = clock.instant()
-        val session = assessmentSessionRepository.lockByAssessmentIdAndStudentProfileId(assessmentId, membership.profileId)
-            ?: throw NotFoundException("Você ainda não iniciou esta atividade.")
+        val session =
+            assessmentSessionRepository.lockByAssessmentIdAndStudentProfileId(assessmentId, membership.profileId)
+                ?: throw NotFoundException("Você ainda não iniciou esta atividade.")
 
         refresh(session, now)
 
         return respond(session, now)
     }
-
-    
 
 
     @Transactional(noRollbackFor = [ConflictException::class])
@@ -84,7 +66,8 @@ class AssessmentSessionService(
         }
 
         val now = clock.instant()
-        val existing = assessmentSessionRepository.lockByAssessmentIdAndStudentProfileId(assessmentId, membership.profileId)
+        val existing =
+            assessmentSessionRepository.lockByAssessmentIdAndStudentProfileId(assessmentId, membership.profileId)
 
         if (existing != null) {
             refresh(existing, now)
@@ -126,8 +109,6 @@ class AssessmentSessionService(
         return respond(session, now) to true
     }
 
-    
-
 
     @Transactional(noRollbackFor = [ConflictException::class])
     fun heartbeat(assessmentId: String): GetAssessmentSessionResponse {
@@ -161,10 +142,12 @@ class AssessmentSessionService(
         return respond(session, now)
     }
 
-    
 
     @Transactional(readOnly = true)
-    fun getMySessions(filter: SessionFilterRequest, pagination: PaginationRequest): PagedResponse<GetAssessmentSessionResponse> {
+    fun getMySessions(
+        filter: SessionFilterRequest,
+        pagination: PaginationRequest
+    ): PagedResponse<GetAssessmentSessionResponse> {
         val profileId = assessmentAccessService.getAuthenticatedProfile().profileId
         val pageRequest = pagination.toPageRequest(allowedSortFields = ALLOWED_SORT_FIELDS)
         val now = clock.instant()
@@ -179,8 +162,6 @@ class AssessmentSessionService(
         }
     }
 
-    
-
 
     fun summarizeMySessions(assessmentIds: List<String>): Map<String, GetAssessmentSessionSummaryResponse> {
         if (assessmentIds.isEmpty()) return emptyMap()
@@ -188,7 +169,10 @@ class AssessmentSessionService(
         val now = clock.instant()
 
         return assessmentSessionRepository
-            .findByAssessmentIdInAndStudentProfileId(assessmentIds, assessmentAccessService.getAuthenticatedProfile().profileId)
+            .findByAssessmentIdInAndStudentProfileId(
+                assessmentIds,
+                assessmentAccessService.getAuthenticatedProfile().profileId
+            )
             .associate { session ->
                 project(session, now)
                 session.assessment.id!! to GetAssessmentSessionSummaryResponse.fromSession(session, now)
@@ -218,7 +202,6 @@ class AssessmentSessionService(
         }
     }
 
-    
 
     @Transactional(readOnly = true)
     fun countSessions(assessmentId: String): Map<AssessmentSessionState, Long> {
@@ -229,13 +212,14 @@ class AssessmentSessionService(
 
         val now = clock.instant()
 
-        assessmentSessionRepository.findByAssessmentIdAndState(assessmentId, AssessmentSessionState.IN_PROGRESS).forEach { session ->
-            project(session, now)
-            if (session.state.isFinal) {
-                counts.merge(AssessmentSessionState.IN_PROGRESS, -1L, Long::plus)
-                counts.merge(session.state, 1L, Long::plus)
+        assessmentSessionRepository.findByAssessmentIdAndState(assessmentId, AssessmentSessionState.IN_PROGRESS)
+            .forEach { session ->
+                project(session, now)
+                if (session.state.isFinal) {
+                    counts.merge(AssessmentSessionState.IN_PROGRESS, -1L, Long::plus)
+                    counts.merge(session.state, 1L, Long::plus)
+                }
             }
-        }
 
         return counts
     }
@@ -262,10 +246,13 @@ class AssessmentSessionService(
             .map(GetAssessmentSessionEventResponse::fromEvent)
     }
 
-    
 
     @Transactional
-    fun reopenSession(assessmentId: String, sessionId: String, request: SessionTimeChangeRequest): GetAssessmentSessionResponse {
+    fun reopenSession(
+        assessmentId: String,
+        sessionId: String,
+        request: SessionTimeChangeRequest
+    ): GetAssessmentSessionResponse {
         val assessment = assessmentAccessService.findManageableAssessment(assessmentId)
         val actor = assessmentAccessService.getAuthenticatedProfile().profileId
         val now = clock.instant()
@@ -292,7 +279,11 @@ class AssessmentSessionService(
     }
 
     @Transactional
-    fun extendSession(assessmentId: String, sessionId: String, request: SessionTimeChangeRequest): GetAssessmentSessionResponse {
+    fun extendSession(
+        assessmentId: String,
+        sessionId: String,
+        request: SessionTimeChangeRequest
+    ): GetAssessmentSessionResponse {
         assessmentAccessService.findManageableAssessment(assessmentId)
         val actor = assessmentAccessService.getAuthenticatedProfile().profileId
         val now = clock.instant()
@@ -331,24 +322,22 @@ class AssessmentSessionService(
         return respond(assessmentSessionRepository.saveAndFlush(session), now)
     }
 
-    
-
 
     fun finishSessionsOnArchive(assessment: Assessment) {
         val now = clock.instant()
 
-        assessmentSessionRepository.findByAssessmentIdAndState(assessment.id!!, AssessmentSessionState.IN_PROGRESS).forEach {
-            val session = assessmentSessionRepository.lockById(it.id!!) ?: return@forEach
+        assessmentSessionRepository.findByAssessmentIdAndState(assessment.id!!, AssessmentSessionState.IN_PROGRESS)
+            .forEach {
+                val session = assessmentSessionRepository.lockById(it.id!!) ?: return@forEach
 
-            refresh(session, now)
+                refresh(session, now)
 
-            if (!session.state.isFinal) {
-                finish(session, AssessmentSessionState.EXPIRED, now, AssessmentSessionEventType.CLOSED_BY_ARCHIVE)
+                if (!session.state.isFinal) {
+                    finish(session, AssessmentSessionState.EXPIRED, now, AssessmentSessionEventType.CLOSED_BY_ARCHIVE)
+                }
             }
-        }
     }
 
-    
 
     @Transactional
     fun refreshSession(sessionId: String) {
@@ -356,8 +345,6 @@ class AssessmentSessionService(
 
         refresh(session, clock.instant())
     }
-
-    
 
 
     @Transactional(readOnly = true)
@@ -370,8 +357,8 @@ class AssessmentSessionService(
 
         val finishedAt = session.finishedAt
         val withinGrace = session.state == AssessmentSessionState.EXPIRED &&
-            finishedAt != null && finishedAt == session.expiresAt &&
-            !now.isAfter(finishedAt.plus(SUBMISSION_GRACE))
+                finishedAt != null && finishedAt == session.expiresAt &&
+                !now.isAfter(finishedAt.plus(SUBMISSION_GRACE))
 
         return GetSessionSubmissionStatusResponse(
             sessionId = session.id!!,
@@ -383,15 +370,12 @@ class AssessmentSessionService(
         )
     }
 
-    
 
     private fun refresh(session: AssessmentSession, now: Instant) {
         val at = pendingExpiry(session, now) ?: return
 
         finish(session, AssessmentSessionState.EXPIRED, at, AssessmentSessionEventType.EXPIRED)
     }
-
-    
 
 
     private fun project(session: AssessmentSession, now: Instant) {
@@ -418,8 +402,6 @@ class AssessmentSessionService(
         session.finishedAt = at
         record(session, eventType, at, actorProfileId)
     }
-
-    
 
 
     private fun countTime(session: AssessmentSession, now: Instant) {
@@ -474,7 +456,6 @@ class AssessmentSessionService(
             ?: throw NotFoundException("Sessão não encontrada.")
     }
 
-    
 
     private fun requireFacultyReader(assessmentId: String) {
         val (_, membership) = assessmentAccessService.findReadableAssessmentWithMembership(assessmentId)

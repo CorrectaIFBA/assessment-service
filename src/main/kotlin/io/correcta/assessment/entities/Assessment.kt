@@ -24,15 +24,8 @@ class Assessment(
     @UuidGenerator(style = UuidGenerator.Style.TIME)
     var id: String? = null,
 
-    
-
-
-
-
     @Column(name = "owner_profile_id", nullable = false, updatable = false)
     var ownerProfileId: String,
-
-    
 
     @Column(name = "cohort_id", updatable = false)
     var cohortId: String? = null,

@@ -1,7 +1,6 @@
 package io.correcta.assessment.entities
 
 
-
 enum class AssessmentSessionEventType {
     STARTED,
     RESUMED,

@@ -1,12 +1,6 @@
 package io.correcta.assessment.handlers
 
-import io.correcta.assessment.exceptions.BadRequestException
-import io.correcta.assessment.exceptions.ConflictException
-import io.correcta.assessment.exceptions.ForbiddenException
-import io.correcta.assessment.exceptions.InternalServerErrorException
-import io.correcta.assessment.exceptions.NotFoundException
-import io.correcta.assessment.exceptions.ServiceUnavailableException
-import io.correcta.assessment.exceptions.UnauthorizedException
+import io.correcta.assessment.exceptions.*
 import io.correcta.assessment.models.response.error.ErrorResponse
 import io.correcta.assessment.models.response.error.ValidationErrorResponse
 import org.slf4j.Logger
@@ -45,7 +39,6 @@ class CustomExceptionHandler {
             .body(validationErrorResponse)
     }
 
-    
 
     @ExceptionHandler(HttpMessageNotReadableException::class)
     fun handleHttpMessageNotReadableException(exception: HttpMessageNotReadableException): ResponseEntity<ErrorResponse> {
@@ -60,7 +53,12 @@ class CustomExceptionHandler {
     fun handleBadRequestException(exception: BadRequestException): ResponseEntity<ErrorResponse> {
         return ResponseEntity
             .status(400)
-            .body(ErrorResponse(exception.message ?: "A requisição não pôde ser compreendida ou não possui os parâmetros obrigatórios."))
+            .body(
+                ErrorResponse(
+                    exception.message
+                        ?: "A requisição não pôde ser compreendida ou não possui os parâmetros obrigatórios."
+                )
+            )
     }
 
     @ExceptionHandler(UnauthorizedException::class)
@@ -117,7 +115,12 @@ class CustomExceptionHandler {
     fun handleConflictException(exception: ConflictException): ResponseEntity<ErrorResponse> {
         return ResponseEntity
             .status(409)
-            .body(ErrorResponse(exception.message ?: "A requisição não pôde ser concluída devido a um conflito com o estado atual do recurso."))
+            .body(
+                ErrorResponse(
+                    exception.message
+                        ?: "A requisição não pôde ser concluída devido a um conflito com o estado atual do recurso."
+                )
+            )
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException::class)
@@ -131,10 +134,15 @@ class CustomExceptionHandler {
     fun handleServiceUnavailableException(exception: ServiceUnavailableException): ResponseEntity<ErrorResponse> {
         return ResponseEntity
             .status(503)
-            .body(ErrorResponse(exception.message ?: "Um serviço necessário está indisponível no momento. Tente novamente mais tarde."))
+            .body(
+                ErrorResponse(
+                    exception.message
+                        ?: "Um serviço necessário está indisponível no momento. Tente novamente mais tarde."
+                )
+            )
     }
 
-   @ExceptionHandler(InternalServerErrorException::class)
+    @ExceptionHandler(InternalServerErrorException::class)
     fun handleInternalServerErrorException(exception: InternalServerErrorException): ResponseEntity<ErrorResponse> {
         log.error("Internal server error: ", exception)
 

@@ -56,11 +56,19 @@ class AssessmentSessionsControllerImpl(
         return assessmentSessionService.getSessionEvents(assessmentId, sessionId)
     }
 
-    override fun reopenSession(assessmentId: String, sessionId: String, body: SessionTimeChangeRequest): GetAssessmentSessionResponse {
+    override fun reopenSession(
+        assessmentId: String,
+        sessionId: String,
+        body: SessionTimeChangeRequest
+    ): GetAssessmentSessionResponse {
         return assessmentSessionService.reopenSession(assessmentId, sessionId, body)
     }
 
-    override fun extendSession(assessmentId: String, sessionId: String, body: SessionTimeChangeRequest): GetAssessmentSessionResponse {
+    override fun extendSession(
+        assessmentId: String,
+        sessionId: String,
+        body: SessionTimeChangeRequest
+    ): GetAssessmentSessionResponse {
         return assessmentSessionService.extendSession(assessmentId, sessionId, body)
     }
 

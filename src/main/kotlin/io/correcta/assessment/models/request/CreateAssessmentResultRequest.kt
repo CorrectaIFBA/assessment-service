@@ -13,7 +13,11 @@ data class CreateAssessmentResultRequest(
 
     @field:Schema(description = "Optional final score.", example = "8.50")
     @field:DecimalMin(value = "0", message = "A nota final deve ser maior ou igual a 0")
-    @field:Digits(integer = 3, fraction = 2, message = "A nota final deve ter no máximo 3 dígitos inteiros e 2 decimais")
+    @field:Digits(
+        integer = 3,
+        fraction = 2,
+        message = "A nota final deve ter no máximo 3 dígitos inteiros e 2 decimais"
+    )
     val finalScore: BigDecimal? = null,
 
     @field:Schema(description = "Optional general faculty comment.")

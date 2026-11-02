@@ -1,8 +1,6 @@
 package io.correcta.assessment.security.models
 
 
-
-
 object IdentityHeaders {
     const val PROFILE_ID = "X-User-Id"
     const val PERSON_ID = "X-User-Person-Id"

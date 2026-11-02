@@ -18,9 +18,7 @@ class ScopeEvaluatorComponent {
 
     fun isTraitedWith(trait: String): Boolean {
         val authentication = currentAuthentication() ?: return false
-        if (authentication.principal !is ProfilePrincipal) return false
-
-        return authentication.authorities.any { it.authority == trait }
+        return authentication.principal is ProfilePrincipal && authentication.authorities.any { it.authority == trait }
     }
 
     fun isNotTraitedWith(trait: String): Boolean {

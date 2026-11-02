@@ -8,7 +8,11 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface AssessmentQuestionTestcaseRepository : JpaRepository<AssessmentQuestionTestcase, String> {
-    fun findByQuestionIdAndIdInOrderByPositionAsc(questionId: String, ids: Collection<String>): List<AssessmentQuestionTestcase>
+    fun findByQuestionIdAndIdInOrderByPositionAsc(
+        questionId: String,
+        ids: Collection<String>
+    ): List<AssessmentQuestionTestcase>
+
     fun findByQuestionIdOrderByPositionAsc(questionId: String): List<AssessmentQuestionTestcase>
 
     fun findByQuestionIdAndTypeInOrderByPositionAsc(

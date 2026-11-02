@@ -7,9 +7,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
-
-
-
 @Component
 class AssessmentSessionSweeper(
     val assessmentSessionRepository: AssessmentSessionRepository,
@@ -18,7 +15,10 @@ class AssessmentSessionSweeper(
 
     private val log: Logger = LoggerFactory.getLogger(AssessmentSessionSweeper::class.java)
 
-    @Scheduled(fixedDelayString = "\${sessions.sweep-interval-ms:60000}", initialDelayString = "\${sessions.sweep-interval-ms:60000}")
+    @Scheduled(
+        fixedDelayString = "\${sessions.sweep-interval-ms:60000}",
+        initialDelayString = "\${sessions.sweep-interval-ms:60000}"
+    )
     fun sweep() {
         assessmentSessionRepository.findByState(AssessmentSessionState.IN_PROGRESS).forEach { session ->
             try {

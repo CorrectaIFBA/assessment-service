@@ -1,12 +1,17 @@
 package io.correcta.assessment
 
 import io.correcta.assessment.clients.CohortClient
+import io.correcta.assessment.messaging.OutboxMessageRepository
+import io.correcta.assessment.messaging.session.SessionMessaging
+import io.correcta.assessment.service.AssessmentSessionService
 import io.correcta.assessment.models.response.clients.CohortMembershipResponse
 import io.correcta.assessment.security.models.IdentityHeaders
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.`when`
 import org.springframework.beans.factory.annotation.Autowired
@@ -27,6 +32,8 @@ import org.springframework.test.web.servlet.post
 @AutoConfigureMockMvc
 class AssessmentSessionTests(
     @Autowired val mockMvc: MockMvc,
+    @Autowired val assessmentSessionService: AssessmentSessionService,
+    @Autowired val outboxMessageRepository: OutboxMessageRepository,
 ) {
 
     @MockitoBean
@@ -89,8 +96,49 @@ class AssessmentSessionTests(
             jsonPath("$.state") { value("EXPIRED") }
             jsonPath("$.finishedAt") { value("2030-03-10T13:30:00Z") }
         }
-        submit(assessmentId).andExpect { status { isConflict() } }
+        // A late delivery does not turn an expired session into a submitted one.
+        deliver(assessmentId)
+        heartbeat(assessmentId).andExpect { jsonPath("$.state") { value("EXPIRED") } }
         start(assessmentId).andExpect { status { isConflict() } }
+    }
+
+    @Test
+    fun `students cannot finish their session through the API`() {
+        val assessmentId = publishedAssessment()
+        start(assessmentId)
+
+        mockMvc.post("/api/v1/assessments/$assessmentId/sessions/me/submit") { header(IdentityHeaders.PROFILE_ID, "student-a") }
+            .andExpect { status { is4xxClientError() } }
+        heartbeat(assessmentId).andExpect { jsonPath("$.state") { value("IN_PROGRESS") } }
+    }
+
+    @Test
+    fun `delivery from workspace-service submits once and announces nothing back`() {
+        val assessmentId = publishedAssessment()
+        start(assessmentId)
+        val before = endedMessages(assessmentId).size
+
+        deliver(assessmentId)
+        deliver(assessmentId)
+
+        heartbeat(assessmentId).andExpect { jsonPath("$.state") { value("SUBMITTED") } }
+        assertEquals(before, endedMessages(assessmentId).size)
+    }
+
+    @Test
+    fun `every other end asks workspace-service to submit the drafts`() {
+        val assessmentId = publishedAssessment(parameters = """{"maximumTimeAllowed": 30}""")
+        start(assessmentId)
+        val sessionId = idOf(start(assessmentId, profileId = "student-b"))
+
+        facultyAction(assessmentId, sessionId, "close").andExpect { status { isOk() } }
+        now = now.plus(Duration.ofMinutes(31))
+        heartbeat(assessmentId).andExpect { jsonPath("$.state") { value("EXPIRED") } }
+
+        val reasons = endedMessages(assessmentId).map { it.payload }
+        assertEquals(2, reasons.size)
+        assertTrue(reasons.any { "\"reason\":\"CLOSED_BY_FACULTY\"" in it && "student-b" in it })
+        assertTrue(reasons.any { "\"reason\":\"EXPIRED\"" in it && "student-a" in it })
     }
 
     @Test
@@ -149,7 +197,7 @@ class AssessmentSessionTests(
         val assessmentId = publishedAssessment()
         start(assessmentId)
         start(assessmentId, profileId = "student-b")
-        submit(assessmentId, profileId = "student-b")
+        deliver(assessmentId, profileId = "student-b")
 
         mockMvc.post("/api/v1/assessments/$assessmentId/archive") { header(IdentityHeaders.PROFILE_ID, "faculty-a") }
             .andExpect { status { isOk() } }
@@ -282,8 +330,13 @@ class AssessmentSessionTests(
         return mockMvc.post("/api/v1/assessments/$assessmentId/sessions/me/heartbeat") { header(IdentityHeaders.PROFILE_ID, "student-a") }
     }
 
-    private fun submit(assessmentId: String, profileId: String = "student-a"): ResultActionsDsl {
-        return mockMvc.post("/api/v1/assessments/$assessmentId/sessions/me/submit") { header(IdentityHeaders.PROFILE_ID, profileId) }
+    /* What workspace-service's session.delivered message does. */
+    private fun deliver(assessmentId: String, profileId: String = "student-a") {
+        assessmentSessionService.deliverSession(assessmentId, profileId, now)
+    }
+
+    private fun endedMessages(assessmentId: String) = outboxMessageRepository.findAll().filter {
+        it.routingKey == SessionMessaging.SESSION_ENDED_KEY && "\"assessmentId\":\"$assessmentId\"" in it.payload
     }
 
     private fun facultyAction(

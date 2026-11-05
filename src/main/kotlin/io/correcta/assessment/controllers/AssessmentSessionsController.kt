@@ -36,10 +36,6 @@ interface AssessmentSessionsController {
     @IsLoggedUser
     fun heartbeat(@PathVariable assessmentId: String): GetAssessmentSessionResponse
 
-    @PostMapping("/me/submit")
-    @IsLoggedUser
-    fun submitSession(@PathVariable assessmentId: String): GetAssessmentSessionResponse
-
 
     @GetMapping
     @IsLoggedUser

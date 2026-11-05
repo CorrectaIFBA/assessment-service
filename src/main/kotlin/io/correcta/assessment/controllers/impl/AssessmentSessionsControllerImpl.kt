@@ -32,10 +32,6 @@ class AssessmentSessionsControllerImpl(
         return assessmentSessionService.heartbeat(assessmentId)
     }
 
-    override fun submitSession(assessmentId: String): GetAssessmentSessionResponse {
-        return assessmentSessionService.submitSession(assessmentId)
-    }
-
     override fun getSessions(
         assessmentId: String,
         filter: SessionFilterRequest,

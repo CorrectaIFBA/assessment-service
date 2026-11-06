@@ -50,6 +50,25 @@ class AssessmentQuestionTestcaseService(
     }
 
 
+    @Transactional(readOnly = true)
+    fun getInternalTestcases(
+        assessmentId: String,
+        questionId: String,
+        types: Collection<AssessmentQuestionTestcaseType>?
+    ): List<GetAssessmentQuestionTestcaseResponse> {
+        assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
+            ?: throw NotFoundException("Questão não encontrada.")
+
+        val testcases = if (types.isNullOrEmpty()) {
+            assessmentQuestionTestcaseRepository.findByQuestionIdOrderByPositionAsc(questionId)
+        } else {
+            assessmentQuestionTestcaseRepository.findByQuestionIdAndTypeInOrderByPositionAsc(questionId, types)
+        }
+
+        return testcases.map { GetAssessmentQuestionTestcaseResponse.fromTestcase(it, isFaculty = true) }
+    }
+
+
     @Transactional
     fun createTestcase(
         assessmentId: String,

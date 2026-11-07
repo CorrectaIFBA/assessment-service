@@ -21,11 +21,12 @@ data class GetAssessmentQuestionResponse(
     data class GetCodeDraftResponse(
         val language: ProgrammingLanguage,
         val code: String,
+        val harness: String?,
     )
 
     companion object {
 
-        fun fromQuestion(question: AssessmentQuestion): GetAssessmentQuestionResponse {
+        fun fromQuestion(question: AssessmentQuestion, isFaculty: Boolean): GetAssessmentQuestionResponse {
             return GetAssessmentQuestionResponse(
                 id = question.id!!,
                 assessmentId = question.assessment.id!!,
@@ -35,7 +36,13 @@ data class GetAssessmentQuestionResponse(
                 statement = question.statement,
                 codeDrafts = question.codeDrafts
                     .sortedBy { it.language.ordinal }
-                    .map { GetCodeDraftResponse(language = it.language, code = it.code) },
+                    .map {
+                        GetCodeDraftResponse(
+                            language = it.language,
+                            code = it.code,
+                            harness = it.harness.takeIf { isFaculty }
+                        )
+                    },
                 maximumGrade = question.maximumGrade,
                 allowCopyPasting = question.allowCopyPasting,
                 createdAt = question.createdAt!!.toString(),

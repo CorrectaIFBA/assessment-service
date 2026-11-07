@@ -1,8 +1,10 @@
 package io.correcta.assessment.service
 
 import io.correcta.assessment.entities.AssessmentQuestion
+import io.correcta.assessment.entities.AssessmentQuestionTestcaseType
 import io.correcta.assessment.entities.AssessmentState
 import io.correcta.assessment.entities.CodeDraft
+import io.correcta.assessment.entities.ProgrammingLanguage
 import io.correcta.assessment.exceptions.BadRequestException
 import io.correcta.assessment.exceptions.ConflictException
 import io.correcta.assessment.exceptions.NotFoundException
@@ -10,7 +12,10 @@ import io.correcta.assessment.models.request.CodeDraftRequest
 import io.correcta.assessment.models.request.CreateAssessmentQuestionRequest
 import io.correcta.assessment.models.request.UpdateAssessmentQuestionRequest
 import io.correcta.assessment.models.response.GetAssessmentQuestionResponse
+import io.correcta.assessment.models.response.GetAssessmentQuestionTestcaseResponse
+import io.correcta.assessment.models.response.GetInternalAssessmentQuestionResponse
 import io.correcta.assessment.repositories.AssessmentQuestionRepository
+import io.correcta.assessment.repositories.AssessmentQuestionTestcaseRepository
 import io.correcta.assessment.repositories.AssessmentSessionRepository
 import io.correcta.assessment.utils.SlugExt.toSlug
 import io.correcta.assessment.utils.SlugExt.uniqueSlug
@@ -22,25 +27,52 @@ class AssessmentQuestionService(
     val assessmentQuestionRepository: AssessmentQuestionRepository,
     val assessmentAccessService: AssessmentAccessService,
     val assessmentSessionRepository: AssessmentSessionRepository,
+    val assessmentQuestionTestcaseRepository: AssessmentQuestionTestcaseRepository,
 ) {
-
 
     @Transactional(readOnly = true)
     fun getQuestions(assessmentId: String): List<GetAssessmentQuestionResponse> {
-        assessmentAccessService.findAssessmentWithVisibleQuestions(assessmentId)
+        val assessment = assessmentAccessService.findAssessmentWithVisibleQuestions(assessmentId)
+        val isFaculty = assessmentAccessService.requireCohortMember(assessment.cohortId!!).isFaculty()
 
         return assessmentQuestionRepository
             .findByAssessmentIdOrderByPositionAsc(assessmentId)
-            .map(GetAssessmentQuestionResponse::fromQuestion)
+            .map { GetAssessmentQuestionResponse.fromQuestion(it, isFaculty) }
     }
 
     @Transactional(readOnly = true)
     fun getQuestion(assessmentId: String, questionId: String): GetAssessmentQuestionResponse {
-        assessmentAccessService.findAssessmentWithVisibleQuestions(assessmentId)
+        val assessment = assessmentAccessService.findAssessmentWithVisibleQuestions(assessmentId)
+        val isFaculty = assessmentAccessService.requireCohortMember(assessment.cohortId!!).isFaculty()
 
-        return GetAssessmentQuestionResponse.fromQuestion(findQuestion(assessmentId, questionId))
+        return GetAssessmentQuestionResponse.fromQuestion(findQuestion(assessmentId, questionId), isFaculty)
     }
 
+    @Transactional(readOnly = true)
+    fun getInternalQuestion(
+        assessmentId: String,
+        questionId: String,
+        language: ProgrammingLanguage,
+        types: Collection<AssessmentQuestionTestcaseType>?
+    ): GetInternalAssessmentQuestionResponse {
+        val question = findQuestion(assessmentId, questionId)
+        val codeDraft = question.codeDrafts.find { it.language == language }
+            ?: throw NotFoundException("A questão não aceita a linguagem $language.")
+
+        val testcases = if (types.isNullOrEmpty()) {
+            assessmentQuestionTestcaseRepository.findByQuestionIdOrderByPositionAsc(questionId)
+        } else {
+            assessmentQuestionTestcaseRepository.findByQuestionIdAndTypeInOrderByPositionAsc(questionId, types)
+        }
+
+        return GetInternalAssessmentQuestionResponse(
+            id = question.id!!,
+            assessmentId = assessmentId,
+            language = codeDraft.language,
+            harness = codeDraft.harness,
+            testcases = testcases.map { GetAssessmentQuestionTestcaseResponse.fromTestcase(it, isFaculty = true) }
+        )
+    }
 
     @Transactional
     fun createQuestion(assessmentId: String, request: CreateAssessmentQuestionRequest): GetAssessmentQuestionResponse {
@@ -68,7 +100,7 @@ class AssessmentQuestionService(
             )
         )
 
-        return GetAssessmentQuestionResponse.fromQuestion(question)
+        return GetAssessmentQuestionResponse.fromQuestion(question, isFaculty = true)
     }
 
     @Transactional
@@ -102,9 +134,8 @@ class AssessmentQuestionService(
         question.maximumGrade = request.maximumGrade!!
         question.allowCopyPasting = request.allowCopyPasting
 
-        return GetAssessmentQuestionResponse.fromQuestion(assessmentQuestionRepository.saveAndFlush(question))
+        return GetAssessmentQuestionResponse.fromQuestion(assessmentQuestionRepository.saveAndFlush(question), isFaculty = true)
     }
-
 
     @Transactional
     fun deleteQuestion(assessmentId: String, questionId: String) {
@@ -124,7 +155,6 @@ class AssessmentQuestionService(
 
         assessmentQuestionRepository.delete(question)
     }
-
 
     private fun codeDraftsOf(requests: List<CodeDraftRequest>): MutableList<CodeDraft> {
         val drafts = requests.map(CodeDraftRequest::toCodeDraft)

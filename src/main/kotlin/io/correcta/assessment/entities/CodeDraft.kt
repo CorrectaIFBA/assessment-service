@@ -5,7 +5,6 @@ import jakarta.persistence.Embeddable
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
 
-
 @Embeddable
 class CodeDraft(
     @Column(nullable = false)
@@ -14,4 +13,7 @@ class CodeDraft(
 
     @Column(nullable = false, columnDefinition = "TEXT")
     var code: String = "",
+
+    @Column(nullable = false, columnDefinition = "TEXT")
+    var harness: String = "",
 )

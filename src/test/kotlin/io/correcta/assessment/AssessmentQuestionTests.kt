@@ -100,6 +100,71 @@ class AssessmentQuestionTests(
     }
 
     @Test
+    fun `the harness is shown to faculty and hidden from students`() {
+        val assessmentId = createAssessment()
+
+        mockMvc.post("/api/v1/assessments/$assessmentId/questions") {
+            header(IdentityHeaders.PROFILE_ID, "faculty-a")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"title": "Soma", "statement": "Some dois números.", "codeDrafts": [{"language": "C", "code": "int soma();", "harness": "int main() {}"}], "maximumGrade": 2}"""
+        }.andExpect {
+            status { isCreated() }
+            jsonPath("$.codeDrafts[0].harness") { value("int main() {}") }
+        }
+
+        publish(assessmentId)
+        assessmentSessionRepository.save(
+            AssessmentSession(
+                assessment = assessmentRepository.findById(assessmentId).get(),
+                studentProfileId = "student-a",
+                startedAt = Instant.now(),
+            )
+        )
+
+        getQuestions(assessmentId, "faculty-a").andExpect { jsonPath("$[0].codeDrafts[0].harness") { value("int main() {}") } }
+        getQuestions(assessmentId, "student-a").andExpect {
+            jsonPath("$[0].codeDrafts[0].code") { value("int soma();") }
+            jsonPath("$[0].codeDrafts[0].harness") { doesNotExist() }
+        }
+    }
+
+    @Test
+    fun `internal question returns the harness and test cases of one language`() {
+        val assessmentId = createAssessment()
+        val questionId = idOf(
+            mockMvc.post("/api/v1/assessments/$assessmentId/questions") {
+                header(IdentityHeaders.PROFILE_ID, "faculty-a")
+                contentType = MediaType.APPLICATION_JSON
+                content = """{"title": "Soma", "statement": "Some dois números.", "codeDrafts": [{"language": "C", "harness": "int main() {}"}], "maximumGrade": 2}"""
+            }
+        )
+
+        listOf("PUBLIC", "EVALUATION").forEach { type ->
+            mockMvc.post("/api/v1/assessments/$assessmentId/questions/$questionId/testcases") {
+                header(IdentityHeaders.PROFILE_ID, "faculty-a")
+                contentType = MediaType.APPLICATION_JSON
+                content = """{"input": "1 2", "expectedOutput": "3", "type": "$type"}"""
+            }.andExpect { status { isCreated() } }
+        }
+
+        mockMvc.get("/api/v1/internal/assessments/$assessmentId/questions/$questionId?language=C&types=EVALUATION")
+            .andExpect {
+                status { isOk() }
+                jsonPath("$.id") { value(questionId) }
+                jsonPath("$.language") { value("C") }
+                jsonPath("$.harness") { value("int main() {}") }
+                jsonPath("$.testcases.length()") { value(1) }
+                jsonPath("$.testcases[0].type") { value("EVALUATION") }
+                jsonPath("$.testcases[0].expectedOutput") { value("3") }
+            }
+
+        mockMvc.get("/api/v1/internal/assessments/$assessmentId/questions/$questionId?language=C")
+            .andExpect { jsonPath("$.testcases.length()") { value(2) } }
+        mockMvc.get("/api/v1/internal/assessments/$assessmentId/questions/missing?language=C")
+            .andExpect { status { isNotFound() } }
+    }
+
+    @Test
     fun `the assessment reports how many questions it has and what they are worth`() {
         val assessmentId = createAssessment()
 

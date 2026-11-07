@@ -17,6 +17,13 @@ data class CodeDraftRequest(
     )
     @field:Size(max = 65535, message = "O código inicial deve ter no máximo 65535 caracteres")
     val code: String = "",
+
+    @field:Schema(
+        description = "Code that wraps the student's code to run the test cases in this language. Hidden from students. Kept as sent, whitespace included.",
+        defaultValue = ""
+    )
+    @field:Size(max = 65535, message = "O harness deve ter no máximo 65535 caracteres")
+    val harness: String = "",
 ) {
-    fun toCodeDraft(): CodeDraft = CodeDraft(language = language!!, code = code)
+    fun toCodeDraft(): CodeDraft = CodeDraft(language = language!!, code = code, harness = harness)
 }

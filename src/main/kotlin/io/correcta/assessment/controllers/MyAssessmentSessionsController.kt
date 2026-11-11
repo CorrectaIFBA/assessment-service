@@ -15,10 +15,10 @@ import org.springframework.web.bind.annotation.RequestMapping
 @Tag(name = "My Assessment Sessions", description = "The authenticated student's sessions in every cohort.")
 interface MyAssessmentSessionsController {
 
-    @GetMapping("/me")
-    @IsLoggedUser
-    fun getMySessions(
-        @Valid @ParameterObject filter: SessionFilterRequest,
-        @Valid @ParameterObject pagination: PaginationRequest
-    ): PagedResponse<GetAssessmentSessionResponse>
+  @GetMapping("/me")
+  @IsLoggedUser
+  fun getMySessions(
+    @Valid @ParameterObject filter: SessionFilterRequest,
+    @Valid @ParameterObject pagination: PaginationRequest,
+  ): PagedResponse<GetAssessmentSessionResponse>
 }

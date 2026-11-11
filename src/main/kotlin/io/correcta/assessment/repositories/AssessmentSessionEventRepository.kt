@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface AssessmentSessionEventRepository : JpaRepository<AssessmentSessionEvent, String> {
-    fun findBySessionIdOrderByOccurredAtAsc(sessionId: String): List<AssessmentSessionEvent>
+  fun findBySessionIdOrderByOccurredAtAsc(sessionId: String): List<AssessmentSessionEvent>
 }

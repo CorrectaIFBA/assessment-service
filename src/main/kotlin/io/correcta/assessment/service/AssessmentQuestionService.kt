@@ -24,182 +24,178 @@ import org.springframework.transaction.annotation.Transactional
 
 @Service
 class AssessmentQuestionService(
-    val assessmentQuestionRepository: AssessmentQuestionRepository,
-    val assessmentAccessService: AssessmentAccessService,
-    val assessmentSessionRepository: AssessmentSessionRepository,
-    val assessmentQuestionTestcaseRepository: AssessmentQuestionTestcaseRepository,
+  val assessmentQuestionRepository: AssessmentQuestionRepository,
+  val assessmentAccessService: AssessmentAccessService,
+  val assessmentSessionRepository: AssessmentSessionRepository,
+  val assessmentQuestionTestcaseRepository: AssessmentQuestionTestcaseRepository,
 ) {
 
-    @Transactional(readOnly = true)
-    fun getQuestions(assessmentId: String): List<GetAssessmentQuestionResponse> {
-        val assessment = assessmentAccessService.findAssessmentWithVisibleQuestions(assessmentId)
-        val isFaculty = assessmentAccessService.requireCohortMember(assessment.cohortId!!).isFaculty()
+  @Transactional(readOnly = true)
+  fun getQuestions(assessmentId: String): List<GetAssessmentQuestionResponse> {
+    val assessment = assessmentAccessService.findAssessmentWithVisibleQuestions(assessmentId)
+    val isFaculty = assessmentAccessService.requireCohortMember(assessment.cohortId!!).isFaculty()
 
-        return assessmentQuestionRepository
-            .findByAssessmentIdOrderByPositionAsc(assessmentId)
-            .map { GetAssessmentQuestionResponse.fromQuestion(it, isFaculty) }
+    return assessmentQuestionRepository
+      .findByAssessmentIdOrderByPositionAsc(assessmentId)
+      .map { GetAssessmentQuestionResponse.fromQuestion(it, isFaculty) }
+  }
+
+  @Transactional(readOnly = true)
+  fun getQuestion(assessmentId: String, questionId: String): GetAssessmentQuestionResponse {
+    val assessment = assessmentAccessService.findAssessmentWithVisibleQuestions(assessmentId)
+    val isFaculty = assessmentAccessService.requireCohortMember(assessment.cohortId!!).isFaculty()
+
+    return GetAssessmentQuestionResponse.fromQuestion(findQuestion(assessmentId, questionId), isFaculty)
+  }
+
+  @Transactional(readOnly = true)
+  fun getInternalQuestion(
+    assessmentId: String,
+    questionId: String,
+    language: ProgrammingLanguage,
+    types: Collection<AssessmentQuestionTestcaseType>?,
+  ): GetInternalAssessmentQuestionResponse {
+    val question = findQuestion(assessmentId, questionId)
+    val codeDraft = question.codeDrafts.find { it.language == language }
+      ?: throw NotFoundException("A questão não aceita a linguagem $language.")
+
+    val testcases = if (types.isNullOrEmpty()) {
+      assessmentQuestionTestcaseRepository.findByQuestionIdOrderByPositionAsc(questionId)
+    } else {
+      assessmentQuestionTestcaseRepository.findByQuestionIdAndTypeInOrderByPositionAsc(questionId, types)
     }
 
-    @Transactional(readOnly = true)
-    fun getQuestion(assessmentId: String, questionId: String): GetAssessmentQuestionResponse {
-        val assessment = assessmentAccessService.findAssessmentWithVisibleQuestions(assessmentId)
-        val isFaculty = assessmentAccessService.requireCohortMember(assessment.cohortId!!).isFaculty()
+    return GetInternalAssessmentQuestionResponse(
+      id = question.id!!,
+      assessmentId = assessmentId,
+      language = codeDraft.language,
+      harness = codeDraft.harness,
+      testcases = testcases.map { GetAssessmentQuestionTestcaseResponse.fromTestcase(it, isFaculty = true) },
+    )
+  }
 
-        return GetAssessmentQuestionResponse.fromQuestion(findQuestion(assessmentId, questionId), isFaculty)
-    }
+  @Transactional
+  fun createQuestion(assessmentId: String, request: CreateAssessmentQuestionRequest): GetAssessmentQuestionResponse {
+    val assessment = assessmentAccessService.findManageableAssessment(assessmentId)
+    val position = request.position ?: nextPosition(assessmentId)
 
-    @Transactional(readOnly = true)
-    fun getInternalQuestion(
-        assessmentId: String,
-        questionId: String,
-        language: ProgrammingLanguage,
-        types: Collection<AssessmentQuestionTestcaseType>?
-    ): GetInternalAssessmentQuestionResponse {
-        val question = findQuestion(assessmentId, questionId)
-        val codeDraft = question.codeDrafts.find { it.language == language }
-            ?: throw NotFoundException("A questão não aceita a linguagem $language.")
+    requirePositionAvailable(assessmentId, position, questionId = null)
 
-        val testcases = if (types.isNullOrEmpty()) {
-            assessmentQuestionTestcaseRepository.findByQuestionIdOrderByPositionAsc(questionId)
-        } else {
-            assessmentQuestionTestcaseRepository.findByQuestionIdAndTypeInOrderByPositionAsc(questionId, types)
-        }
-
-        return GetInternalAssessmentQuestionResponse(
-            id = question.id!!,
-            assessmentId = assessmentId,
-            language = codeDraft.language,
-            harness = codeDraft.harness,
-            testcases = testcases.map { GetAssessmentQuestionTestcaseResponse.fromTestcase(it, isFaculty = true) }
-        )
-    }
-
-    @Transactional
-    fun createQuestion(assessmentId: String, request: CreateAssessmentQuestionRequest): GetAssessmentQuestionResponse {
-        val assessment = assessmentAccessService.findManageableAssessment(assessmentId)
-        val position = request.position ?: nextPosition(assessmentId)
-
-        requirePositionAvailable(assessmentId, position, questionId = null)
-
-        val question = assessmentQuestionRepository.save(
-            AssessmentQuestion(
-                assessment = assessment,
-                position = position,
-                title = request.title.trim(),
-                slug = request.slug?.also { requireSlugAvailable(assessmentId, it, questionId = null) }
-                    ?: uniqueSlug(request.title.toSlug(FALLBACK_SLUG)) {
-                        it in RESERVED_SLUGS || assessmentQuestionRepository.existsByAssessmentIdAndSlug(
-                            assessmentId,
-                            it
-                        )
-                    },
-                statement = request.statement.trim(),
-                codeDrafts = codeDraftsOf(request.codeDrafts),
-                maximumGrade = request.maximumGrade!!,
-                allowCopyPasting = request.allowCopyPasting,
+    val question = assessmentQuestionRepository.save(
+      AssessmentQuestion(
+        assessment = assessment,
+        position = position,
+        title = request.title.trim(),
+        slug = request.slug?.also { requireSlugAvailable(assessmentId, it, questionId = null) }
+          ?: uniqueSlug(request.title.toSlug(FALLBACK_SLUG)) {
+            it in RESERVED_SLUGS || assessmentQuestionRepository.existsByAssessmentIdAndSlug(
+              assessmentId,
+              it,
             )
-        )
+          },
+        statement = request.statement.trim(),
+        codeDrafts = codeDraftsOf(request.codeDrafts),
+        maximumGrade = request.maximumGrade!!,
+        allowCopyPasting = request.allowCopyPasting,
+      ),
+    )
 
-        return GetAssessmentQuestionResponse.fromQuestion(question, isFaculty = true)
+    return GetAssessmentQuestionResponse.fromQuestion(question, isFaculty = true)
+  }
+
+  @Transactional
+  fun updateQuestion(
+    assessmentId: String,
+    questionId: String,
+    request: UpdateAssessmentQuestionRequest,
+  ): GetAssessmentQuestionResponse {
+    assessmentAccessService.findManageableAssessment(assessmentId)
+    val question = findQuestion(assessmentId, questionId)
+    val position = request.position!!
+
+    requirePositionAvailable(assessmentId, position, questionId)
+
+    if (request.maximumGrade!!.compareTo(question.maximumGrade) != 0 && assessmentSessionRepository.existsByAssessmentId(
+        assessmentId,
+      )
+    ) {
+      throw ConflictException("Estudantes já iniciaram a atividade: a nota máxima da questão não pode mudar.")
     }
 
-    @Transactional
-    fun updateQuestion(
-        assessmentId: String,
-        questionId: String,
-        request: UpdateAssessmentQuestionRequest
-    ): GetAssessmentQuestionResponse {
-        assessmentAccessService.findManageableAssessment(assessmentId)
-        val question = findQuestion(assessmentId, questionId)
-        val position = request.position!!
+    question.position = position
+    question.title = request.title.trim()
+    request.slug?.takeIf { it != question.slug }?.let { slug ->
+      requireSlugAvailable(assessmentId, slug, questionId)
+      question.slug = slug
+    }
+    question.statement = request.statement.trim()
+    question.codeDrafts.clear()
+    question.codeDrafts.addAll(codeDraftsOf(request.codeDrafts))
+    question.maximumGrade = request.maximumGrade!!
+    question.allowCopyPasting = request.allowCopyPasting
 
-        requirePositionAvailable(assessmentId, position, questionId)
+    return GetAssessmentQuestionResponse.fromQuestion(assessmentQuestionRepository.saveAndFlush(question), isFaculty = true)
+  }
 
-        if (request.maximumGrade!!.compareTo(question.maximumGrade) != 0 && assessmentSessionRepository.existsByAssessmentId(
-                assessmentId
-            )
-        ) {
-            throw ConflictException("Estudantes já iniciaram a atividade: a nota máxima da questão não pode mudar.")
-        }
+  @Transactional
+  fun deleteQuestion(assessmentId: String, questionId: String) {
+    val assessment = assessmentAccessService.findManageableAssessment(assessmentId)
+    val question = findQuestion(assessmentId, questionId)
 
-        question.position = position
-        question.title = request.title.trim()
-        request.slug?.takeIf { it != question.slug }?.let { slug ->
-            requireSlugAvailable(assessmentId, slug, questionId)
-            question.slug = slug
-        }
-        question.statement = request.statement.trim()
-        question.codeDrafts.clear()
-        question.codeDrafts.addAll(codeDraftsOf(request.codeDrafts))
-        question.maximumGrade = request.maximumGrade!!
-        question.allowCopyPasting = request.allowCopyPasting
-
-        return GetAssessmentQuestionResponse.fromQuestion(assessmentQuestionRepository.saveAndFlush(question), isFaculty = true)
+    if (assessmentSessionRepository.existsByAssessmentId(assessmentId)) {
+      throw ConflictException("Estudantes já iniciaram a atividade: a questão não pode ser excluída.")
     }
 
-    @Transactional
-    fun deleteQuestion(assessmentId: String, questionId: String) {
-        val assessment = assessmentAccessService.findManageableAssessment(assessmentId)
-        val question = findQuestion(assessmentId, questionId)
-
-        if (assessmentSessionRepository.existsByAssessmentId(assessmentId)) {
-            throw ConflictException("Estudantes já iniciaram a atividade: a questão não pode ser excluída.")
-        }
-
-        if (assessment.state == AssessmentState.PUBLISHED && assessmentQuestionRepository.countByAssessmentId(
-                assessmentId
-            ) <= 1
-        ) {
-            throw ConflictException("Uma atividade publicada precisa de ao menos uma questão.")
-        }
-
-        assessmentQuestionRepository.delete(question)
+    if (assessment.state == AssessmentState.PUBLISHED && assessmentQuestionRepository.countByAssessmentId(
+        assessmentId,
+      ) <= 1
+    ) {
+      throw ConflictException("Uma atividade publicada precisa de ao menos uma questão.")
     }
 
-    private fun codeDraftsOf(requests: List<CodeDraftRequest>): MutableList<CodeDraft> {
-        val drafts = requests.map(CodeDraftRequest::toCodeDraft)
+    assessmentQuestionRepository.delete(question)
+  }
 
-        if (drafts.map { it.language }.toSet().size != drafts.size) {
-            throw BadRequestException("Cada linguagem pode ter apenas um código inicial.")
-        }
+  private fun codeDraftsOf(requests: List<CodeDraftRequest>): MutableList<CodeDraft> {
+    val drafts = requests.map(CodeDraftRequest::toCodeDraft)
 
-        return drafts.toMutableList()
+    if (drafts.map { it.language }.toSet().size != drafts.size) {
+      throw BadRequestException("Cada linguagem pode ter apenas um código inicial.")
     }
 
-    private fun nextPosition(assessmentId: String): Int {
-        return assessmentQuestionRepository.findTopByAssessmentIdOrderByPositionDesc(assessmentId)
-            ?.position?.plus(1)
-            ?: 0
+    return drafts.toMutableList()
+  }
+
+  private fun nextPosition(assessmentId: String): Int = assessmentQuestionRepository.findTopByAssessmentIdOrderByPositionDesc(assessmentId)
+    ?.position?.plus(1)
+    ?: 0
+
+  private fun requirePositionAvailable(assessmentId: String, position: Int, questionId: String?) {
+    val occupant = assessmentQuestionRepository.findByAssessmentIdAndPosition(assessmentId, position)
+
+    if (occupant != null && occupant.id != questionId) {
+      throw ConflictException("Já existe uma questão na posição $position.")
+    }
+  }
+
+  private fun findQuestion(assessmentId: String, questionId: String): AssessmentQuestion = assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
+    ?: throw NotFoundException("Questão não encontrada.")
+
+  private fun requireSlugAvailable(assessmentId: String, slug: String, questionId: String?) {
+    if (slug in RESERVED_SLUGS) throw BadRequestException("O slug '$slug' é reservado.")
+
+    val taken = if (questionId == null) {
+      assessmentQuestionRepository.existsByAssessmentIdAndSlug(assessmentId, slug)
+    } else {
+      assessmentQuestionRepository.existsByAssessmentIdAndSlugAndIdNot(assessmentId, slug, questionId)
     }
 
-    private fun requirePositionAvailable(assessmentId: String, position: Int, questionId: String?) {
-        val occupant = assessmentQuestionRepository.findByAssessmentIdAndPosition(assessmentId, position)
+    if (taken) throw ConflictException("Já existe uma questão com o slug '$slug' nesta atividade.")
+  }
 
-        if (occupant != null && occupant.id != questionId) {
-            throw ConflictException("Já existe uma questão na posição $position.")
-        }
-    }
+  companion object {
+    private const val FALLBACK_SLUG = "questao"
 
-    private fun findQuestion(assessmentId: String, questionId: String): AssessmentQuestion {
-        return assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
-            ?: throw NotFoundException("Questão não encontrada.")
-    }
-
-    private fun requireSlugAvailable(assessmentId: String, slug: String, questionId: String?) {
-        if (slug in RESERVED_SLUGS) throw BadRequestException("O slug '$slug' é reservado.")
-
-        val taken = if (questionId == null) {
-            assessmentQuestionRepository.existsByAssessmentIdAndSlug(assessmentId, slug)
-        } else {
-            assessmentQuestionRepository.existsByAssessmentIdAndSlugAndIdNot(assessmentId, slug, questionId)
-        }
-
-        if (taken) throw ConflictException("Já existe uma questão com o slug '$slug' nesta atividade.")
-    }
-
-    companion object {
-        private const val FALLBACK_SLUG = "questao"
-
-        private val RESERVED_SLUGS = setOf("new")
-    }
+    private val RESERVED_SLUGS = setOf("new")
+  }
 }

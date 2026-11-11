@@ -9,33 +9,25 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class AssessmentQuestionsControllerImpl(
-    val assessmentQuestionService: AssessmentQuestionService
+  val assessmentQuestionService: AssessmentQuestionService,
 ) : AssessmentQuestionsController {
 
-    override fun getQuestions(assessmentId: String): List<GetAssessmentQuestionResponse> {
-        return assessmentQuestionService.getQuestions(assessmentId)
-    }
+  override fun getQuestions(assessmentId: String): List<GetAssessmentQuestionResponse> = assessmentQuestionService.getQuestions(assessmentId)
 
-    override fun getQuestion(assessmentId: String, questionId: String): GetAssessmentQuestionResponse {
-        return assessmentQuestionService.getQuestion(assessmentId, questionId)
-    }
+  override fun getQuestion(assessmentId: String, questionId: String): GetAssessmentQuestionResponse = assessmentQuestionService.getQuestion(assessmentId, questionId)
 
-    override fun createQuestion(
-        assessmentId: String,
-        body: CreateAssessmentQuestionRequest
-    ): GetAssessmentQuestionResponse {
-        return assessmentQuestionService.createQuestion(assessmentId, body)
-    }
+  override fun createQuestion(
+    assessmentId: String,
+    body: CreateAssessmentQuestionRequest,
+  ): GetAssessmentQuestionResponse = assessmentQuestionService.createQuestion(assessmentId, body)
 
-    override fun editQuestion(
-        assessmentId: String,
-        questionId: String,
-        body: UpdateAssessmentQuestionRequest
-    ): GetAssessmentQuestionResponse {
-        return assessmentQuestionService.updateQuestion(assessmentId, questionId, body)
-    }
+  override fun editQuestion(
+    assessmentId: String,
+    questionId: String,
+    body: UpdateAssessmentQuestionRequest,
+  ): GetAssessmentQuestionResponse = assessmentQuestionService.updateQuestion(assessmentId, questionId, body)
 
-    override fun deleteQuestion(assessmentId: String, questionId: String) {
-        assessmentQuestionService.deleteQuestion(assessmentId, questionId)
-    }
+  override fun deleteQuestion(assessmentId: String, questionId: String) {
+    assessmentQuestionService.deleteQuestion(assessmentId, questionId)
+  }
 }

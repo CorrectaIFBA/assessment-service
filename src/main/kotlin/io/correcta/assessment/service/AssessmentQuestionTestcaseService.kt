@@ -19,293 +19,284 @@ import org.springframework.transaction.annotation.Transactional
 
 @Service
 class AssessmentQuestionTestcaseService(
-    val assessmentQuestionTestcaseRepository: AssessmentQuestionTestcaseRepository,
-    val assessmentQuestionRepository: AssessmentQuestionRepository,
-    val assessmentAccessService: AssessmentAccessService,
-    val assessmentSessionRepository: AssessmentSessionRepository,
+  val assessmentQuestionTestcaseRepository: AssessmentQuestionTestcaseRepository,
+  val assessmentQuestionRepository: AssessmentQuestionRepository,
+  val assessmentAccessService: AssessmentAccessService,
+  val assessmentSessionRepository: AssessmentSessionRepository,
 ) {
 
+  @Transactional(readOnly = true)
+  fun getTestcases(assessmentId: String, questionId: String): List<GetAssessmentQuestionTestcaseResponse> {
+    val assessment =
+      assessmentAccessService.findAssessmentWithVisibleQuestions(assessmentId)
 
-    @Transactional(readOnly = true)
-    fun getTestcases(assessmentId: String, questionId: String): List<GetAssessmentQuestionTestcaseResponse> {
-        val assessment =
-            assessmentAccessService.findAssessmentWithVisibleQuestions(assessmentId)
+    val membership =
+      assessmentAccessService.requireCohortMember(assessment.cohortId!!)
+    val isFaculty = membership.isFaculty()
 
-        val membership =
-            assessmentAccessService.requireCohortMember(assessment.cohortId!!)
-        val isFaculty = membership.isFaculty()
+    assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
+      ?: throw NotFoundException("Questão não encontrada.")
 
-        assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
-            ?: throw NotFoundException("Questão não encontrada.")
+    val testcases = assessmentQuestionTestcaseRepository.findByQuestionIdOrderByPositionAsc(questionId)
 
-        val testcases = assessmentQuestionTestcaseRepository.findByQuestionIdOrderByPositionAsc(questionId)
+    return testcases.filter { testcase ->
+      val isGenerallyVisible = testcase.type.isListVisible
 
-        return testcases.filter { testcase ->
-            val isGenerallyVisible = testcase.type.isListVisible
+      isGenerallyVisible || isFaculty
+    }.map { testcase ->
+      GetAssessmentQuestionTestcaseResponse.fromTestcase(testcase, isFaculty)
+    }
+  }
 
-            isGenerallyVisible || isFaculty
-        }.map { testcase ->
-            GetAssessmentQuestionTestcaseResponse.fromTestcase(testcase, isFaculty)
-        }
+  @Transactional
+  fun createTestcase(
+    assessmentId: String,
+    questionId: String,
+    request: CreateAssessmentQuestionTestcaseRequest,
+  ): GetAssessmentQuestionTestcaseResponse {
+    assessmentAccessService.findManageableAssessment(assessmentId)
+
+    val question = assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
+      ?: throw NotFoundException("Questão não encontrada.")
+
+    val existingTestcase = request.position?.let { position ->
+      assessmentQuestionTestcaseRepository.findByQuestionIdAndPosition(questionId, position)
     }
 
+    if (existingTestcase != null) {
+      throw ConflictException("Já existe um caso de teste na posição ${request.position}.")
+    }
 
-    @Transactional
-    fun createTestcase(
-        assessmentId: String,
-        questionId: String,
-        request: CreateAssessmentQuestionTestcaseRequest
-    ): GetAssessmentQuestionTestcaseResponse {
-        assessmentAccessService.findManageableAssessment(assessmentId)
+    val position = request.position ?: question.nextAvailablePosition
 
-        val question = assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
-            ?: throw NotFoundException("Questão não encontrada.")
+    val testcase = assessmentQuestionTestcaseRepository.save(
+      AssessmentQuestionTestcase(
+        question = question,
+        position = position,
+        input = request.input,
+        expectedOutput = request.expectedOutput,
+        timeLimitSeconds = request.timeLimitSeconds,
+        memoryLimitMB = request.memoryLimitMB,
+        type = request.type!!,
+      ),
+    )
 
-        val existingTestcase = request.position?.let { position ->
-            assessmentQuestionTestcaseRepository.findByQuestionIdAndPosition(questionId, position)
-        }
+    return GetAssessmentQuestionTestcaseResponse.fromTestcase(testcase, isFaculty = true)
+  }
 
+  @Transactional
+  fun updateTestcase(
+    assessmentId: String,
+    questionId: String,
+    testcaseId: String,
+    request: UpdateAssessmentQuestionTestcaseRequest,
+  ): GetAssessmentQuestionTestcaseResponse {
+    assessmentAccessService.findManageableAssessment(assessmentId)
+
+    assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
+      ?: throw NotFoundException("Questão não encontrada.")
+
+    val testcase = assessmentQuestionTestcaseRepository.findByIdAndQuestionId(testcaseId, questionId)
+      ?: throw NotFoundException("Caso de teste não encontrado.")
+
+    request.position?.let { position ->
+      if (position != testcase.position) {
+        val existingTestcase =
+          assessmentQuestionTestcaseRepository.findByQuestionIdAndPosition(questionId, position)
         if (existingTestcase != null) {
-            throw ConflictException("Já existe um caso de teste na posição ${request.position}.")
+          throw ConflictException("Já existe um caso de teste na posição $position.")
         }
-
-        val position = request.position ?: question.nextAvailablePosition
-
-        val testcase = assessmentQuestionTestcaseRepository.save(
-            AssessmentQuestionTestcase(
-                question = question,
-                position = position,
-                input = request.input,
-                expectedOutput = request.expectedOutput,
-                timeLimitSeconds = request.timeLimitSeconds,
-                memoryLimitMB = request.memoryLimitMB,
-                type = request.type!!
-            )
-        )
-
-        return GetAssessmentQuestionTestcaseResponse.fromTestcase(testcase, isFaculty = true)
+        testcase.position = position
+      }
     }
 
-
-    @Transactional
-    fun updateTestcase(
-        assessmentId: String,
-        questionId: String,
-        testcaseId: String,
-        request: UpdateAssessmentQuestionTestcaseRequest
-    ): GetAssessmentQuestionTestcaseResponse {
-        assessmentAccessService.findManageableAssessment(assessmentId)
-
-        assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
-            ?: throw NotFoundException("Questão não encontrada.")
-
-        val testcase = assessmentQuestionTestcaseRepository.findByIdAndQuestionId(testcaseId, questionId)
-            ?: throw NotFoundException("Caso de teste não encontrado.")
-
-        request.position?.let { position ->
-            if (position != testcase.position) {
-                val existingTestcase =
-                    assessmentQuestionTestcaseRepository.findByQuestionIdAndPosition(questionId, position)
-                if (existingTestcase != null) {
-                    throw ConflictException("Já existe um caso de teste na posição $position.")
-                }
-                testcase.position = position
-            }
-        }
-
-        request.input.let { input ->
-            testcase.input = input
-        }
-
-        request.expectedOutput?.let { expectedOutput ->
-            testcase.expectedOutput = expectedOutput
-        }
-
-        request.timeLimitSeconds.let { timeLimitSeconds ->
-            testcase.timeLimitSeconds = timeLimitSeconds
-        }
-
-        request.memoryLimitMB.let { memoryLimitMB ->
-            testcase.memoryLimitMB = memoryLimitMB
-        }
-
-        request.type?.let { type ->
-            testcase.type = type
-        }
-
-        val updatedTestcase = assessmentQuestionTestcaseRepository.save(testcase)
-
-        return GetAssessmentQuestionTestcaseResponse.fromTestcase(updatedTestcase, isFaculty = true)
+    request.input.let { input ->
+      testcase.input = input
     }
 
-
-    @Transactional
-    fun bulkUpdateTestcases(
-        assessmentId: String,
-        questionId: String,
-        request: BulkUpdateAssessmentQuestionTestcaseRequest
-    ): List<GetAssessmentQuestionTestcaseResponse> {
-        assessmentAccessService.findManageableAssessment(assessmentId)
-
-        assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
-            ?: throw NotFoundException("Questão não encontrada.")
-
-        val testcases = assessmentQuestionTestcaseRepository.findByQuestionIdAndIdInOrderByPositionAsc(
-            questionId,
-            request.testCaseIds
-        )
-
-        if (testcases.size != request.testCaseIds.toSet().size) {
-            throw NotFoundException("Caso de teste não encontrado.")
-        }
-
-        val updatedTestcases = testcases.map { testcase ->
-            request.timeLimitSeconds?.let { timeLimitSeconds ->
-                testcase.timeLimitSeconds = timeLimitSeconds
-            }
-
-            request.memoryLimitMB?.let { memoryLimitMB ->
-                testcase.memoryLimitMB = memoryLimitMB
-            }
-
-            request.type?.let { type ->
-                testcase.type = type
-            }
-
-            assessmentQuestionTestcaseRepository.save(testcase)
-        }
-
-        return updatedTestcases.map { testcase ->
-            GetAssessmentQuestionTestcaseResponse.fromTestcase(testcase, isFaculty = true)
-        }
+    request.expectedOutput?.let { expectedOutput ->
+      testcase.expectedOutput = expectedOutput
     }
 
-
-    @Transactional
-    fun deleteTestcase(assessmentId: String, questionId: String, testcaseId: String) {
-        assessmentAccessService.findManageableAssessment(assessmentId)
-
-        assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
-            ?: throw NotFoundException("Questão não encontrada.")
-
-        val testcase = assessmentQuestionTestcaseRepository.findByIdAndQuestionId(testcaseId, questionId)
-            ?: throw NotFoundException("Caso de teste não encontrado.")
-
-        requireGradingTestcasesKept(assessmentId, listOf(testcase))
-        assessmentQuestionTestcaseRepository.delete(testcase)
+    request.timeLimitSeconds.let { timeLimitSeconds ->
+      testcase.timeLimitSeconds = timeLimitSeconds
     }
 
-
-    @Transactional
-    fun bulkDeleteTestcases(assessmentId: String, questionId: String, testcaseIds: List<String>) {
-        assessmentAccessService.findManageableAssessment(assessmentId)
-
-        assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
-            ?: throw NotFoundException("Questão não encontrada.")
-
-        if (testcaseIds.isEmpty()) {
-            throw BadRequestException("Selecione ao menos um caso de teste.")
-        }
-
-        val testcases =
-            assessmentQuestionTestcaseRepository.findByQuestionIdAndIdInOrderByPositionAsc(questionId, testcaseIds)
-
-        if (testcases.size != testcaseIds.toSet().size) {
-            throw NotFoundException("Caso de teste não encontrado.")
-        }
-
-        requireGradingTestcasesKept(assessmentId, testcases)
-        assessmentQuestionTestcaseRepository.deleteAll(testcases)
+    request.memoryLimitMB.let { memoryLimitMB ->
+      testcase.memoryLimitMB = memoryLimitMB
     }
 
-
-    @Transactional
-    fun importTestcases(
-        assessmentId: String,
-        questionId: String,
-        request: ImportAssessmentQuestionTestcasesRequest,
-        inputs: org.springframework.web.multipart.MultipartFile,
-        outputs: org.springframework.web.multipart.MultipartFile
-    ): List<GetAssessmentQuestionTestcaseResponse> {
-        assessmentAccessService.findManageableAssessment(assessmentId)
-
-        val question = assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
-            ?: throw NotFoundException("Questão não encontrada.")
-
-        val inputLines = inputs.inputStream.bufferedReader().readLines()
-        val outputLines = outputs.inputStream.bufferedReader().readLines()
-
-        if (inputLines.size != outputLines.size) {
-            throw BadRequestException("O número de linhas de entrada e saída não corresponde.")
-        }
-
-        val nextAvailablePosition = question.nextAvailablePosition
-
-        val testcases = inputLines.zip(outputLines).mapIndexed { index, (input, output) ->
-            AssessmentQuestionTestcase(
-                question = question,
-                position = nextAvailablePosition + index,
-                input = input,
-                expectedOutput = output,
-                timeLimitSeconds = request.timeLimitSeconds,
-                memoryLimitMB = request.memoryLimitMB,
-                type = request.type!!
-            )
-        }
-
-        val savedTestcases = assessmentQuestionTestcaseRepository.saveAll(testcases)
-
-        return savedTestcases.map { testcase ->
-            GetAssessmentQuestionTestcaseResponse.fromTestcase(testcase, isFaculty = true)
-        }
+    request.type?.let { type ->
+      testcase.type = type
     }
 
+    val updatedTestcase = assessmentQuestionTestcaseRepository.save(testcase)
 
-    @Transactional
-    fun reorderTestcases(
-        assessmentId: String,
-        questionId: String,
-        newOrder: List<String>
-    ): List<GetAssessmentQuestionTestcaseResponse> {
-        assessmentAccessService.findManageableAssessment(assessmentId)
+    return GetAssessmentQuestionTestcaseResponse.fromTestcase(updatedTestcase, isFaculty = true)
+  }
 
-        assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
-            ?: throw NotFoundException("Questão não encontrada.")
+  @Transactional
+  fun bulkUpdateTestcases(
+    assessmentId: String,
+    questionId: String,
+    request: BulkUpdateAssessmentQuestionTestcaseRequest,
+  ): List<GetAssessmentQuestionTestcaseResponse> {
+    assessmentAccessService.findManageableAssessment(assessmentId)
 
-        val testcases = assessmentQuestionTestcaseRepository.findByQuestionIdOrderByPositionAsc(questionId)
+    assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
+      ?: throw NotFoundException("Questão não encontrada.")
 
-        if (newOrder.size != testcases.size || !newOrder.containsAll(testcases.map { it.id!! })) {
-            throw BadRequestException("A nova ordem de casos de teste não corresponde aos casos de teste existentes.")
-        }
+    val testcases = assessmentQuestionTestcaseRepository.findByQuestionIdAndIdInOrderByPositionAsc(
+      questionId,
+      request.testCaseIds,
+    )
 
-        val testcasesById = testcases.associateBy { it.id!! }
-        val reorderedTestcases = newOrder.map { testcaseId -> testcasesById.getValue(testcaseId) }
-
-        reorderedTestcases.forEachIndexed { index, testcase -> testcase.position = -(index + 1) }
-        assessmentQuestionTestcaseRepository.saveAllAndFlush(reorderedTestcases)
-
-        reorderedTestcases.forEachIndexed { index, testcase -> testcase.position = index + 1 }
-        val savedTestcases = assessmentQuestionTestcaseRepository.saveAll(reorderedTestcases)
-
-        return savedTestcases.map { testcase ->
-            GetAssessmentQuestionTestcaseResponse.fromTestcase(testcase, isFaculty = true)
-        }
+    if (testcases.size != request.testCaseIds.toSet().size) {
+      throw NotFoundException("Caso de teste não encontrado.")
     }
 
+    val updatedTestcases = testcases.map { testcase ->
+      request.timeLimitSeconds?.let { timeLimitSeconds ->
+        testcase.timeLimitSeconds = timeLimitSeconds
+      }
 
-    private val AssessmentQuestion.nextAvailablePosition: Int
-        get() {
-            val maxPosition = assessmentQuestionTestcaseRepository.findMaxPositionByQuestionId(this.id!!)
+      request.memoryLimitMB?.let { memoryLimitMB ->
+        testcase.memoryLimitMB = memoryLimitMB
+      }
 
-            return (maxPosition ?: 0) + 1
-        }
+      request.type?.let { type ->
+        testcase.type = type
+      }
 
-
-    private fun requireGradingTestcasesKept(assessmentId: String, testcases: List<AssessmentQuestionTestcase>) {
-        if (testcases.any { it.type != AssessmentQuestionTestcaseType.PUBLIC } && assessmentSessionRepository.existsByAssessmentId(
-                assessmentId
-            )) {
-            throw ConflictException("Estudantes já iniciaram a atividade: casos de teste privados e de avaliação não podem ser excluídos.")
-        }
+      assessmentQuestionTestcaseRepository.save(testcase)
     }
+
+    return updatedTestcases.map { testcase ->
+      GetAssessmentQuestionTestcaseResponse.fromTestcase(testcase, isFaculty = true)
+    }
+  }
+
+  @Transactional
+  fun deleteTestcase(assessmentId: String, questionId: String, testcaseId: String) {
+    assessmentAccessService.findManageableAssessment(assessmentId)
+
+    assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
+      ?: throw NotFoundException("Questão não encontrada.")
+
+    val testcase = assessmentQuestionTestcaseRepository.findByIdAndQuestionId(testcaseId, questionId)
+      ?: throw NotFoundException("Caso de teste não encontrado.")
+
+    requireGradingTestcasesKept(assessmentId, listOf(testcase))
+    assessmentQuestionTestcaseRepository.delete(testcase)
+  }
+
+  @Transactional
+  fun bulkDeleteTestcases(assessmentId: String, questionId: String, testcaseIds: List<String>) {
+    assessmentAccessService.findManageableAssessment(assessmentId)
+
+    assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
+      ?: throw NotFoundException("Questão não encontrada.")
+
+    if (testcaseIds.isEmpty()) {
+      throw BadRequestException("Selecione ao menos um caso de teste.")
+    }
+
+    val testcases =
+      assessmentQuestionTestcaseRepository.findByQuestionIdAndIdInOrderByPositionAsc(questionId, testcaseIds)
+
+    if (testcases.size != testcaseIds.toSet().size) {
+      throw NotFoundException("Caso de teste não encontrado.")
+    }
+
+    requireGradingTestcasesKept(assessmentId, testcases)
+    assessmentQuestionTestcaseRepository.deleteAll(testcases)
+  }
+
+  @Transactional
+  fun importTestcases(
+    assessmentId: String,
+    questionId: String,
+    request: ImportAssessmentQuestionTestcasesRequest,
+    inputs: org.springframework.web.multipart.MultipartFile,
+    outputs: org.springframework.web.multipart.MultipartFile,
+  ): List<GetAssessmentQuestionTestcaseResponse> {
+    assessmentAccessService.findManageableAssessment(assessmentId)
+
+    val question = assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
+      ?: throw NotFoundException("Questão não encontrada.")
+
+    val inputLines = inputs.inputStream.bufferedReader().readLines()
+    val outputLines = outputs.inputStream.bufferedReader().readLines()
+
+    if (inputLines.size != outputLines.size) {
+      throw BadRequestException("O número de linhas de entrada e saída não corresponde.")
+    }
+
+    val nextAvailablePosition = question.nextAvailablePosition
+
+    val testcases = inputLines.zip(outputLines).mapIndexed { index, (input, output) ->
+      AssessmentQuestionTestcase(
+        question = question,
+        position = nextAvailablePosition + index,
+        input = input,
+        expectedOutput = output,
+        timeLimitSeconds = request.timeLimitSeconds,
+        memoryLimitMB = request.memoryLimitMB,
+        type = request.type!!,
+      )
+    }
+
+    val savedTestcases = assessmentQuestionTestcaseRepository.saveAll(testcases)
+
+    return savedTestcases.map { testcase ->
+      GetAssessmentQuestionTestcaseResponse.fromTestcase(testcase, isFaculty = true)
+    }
+  }
+
+  @Transactional
+  fun reorderTestcases(
+    assessmentId: String,
+    questionId: String,
+    newOrder: List<String>,
+  ): List<GetAssessmentQuestionTestcaseResponse> {
+    assessmentAccessService.findManageableAssessment(assessmentId)
+
+    assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
+      ?: throw NotFoundException("Questão não encontrada.")
+
+    val testcases = assessmentQuestionTestcaseRepository.findByQuestionIdOrderByPositionAsc(questionId)
+
+    if (newOrder.size != testcases.size || !newOrder.containsAll(testcases.map { it.id!! })) {
+      throw BadRequestException("A nova ordem de casos de teste não corresponde aos casos de teste existentes.")
+    }
+
+    val testcasesById = testcases.associateBy { it.id!! }
+    val reorderedTestcases = newOrder.map { testcaseId -> testcasesById.getValue(testcaseId) }
+
+    reorderedTestcases.forEachIndexed { index, testcase -> testcase.position = -(index + 1) }
+    assessmentQuestionTestcaseRepository.saveAllAndFlush(reorderedTestcases)
+
+    reorderedTestcases.forEachIndexed { index, testcase -> testcase.position = index + 1 }
+    val savedTestcases = assessmentQuestionTestcaseRepository.saveAll(reorderedTestcases)
+
+    return savedTestcases.map { testcase ->
+      GetAssessmentQuestionTestcaseResponse.fromTestcase(testcase, isFaculty = true)
+    }
+  }
+
+  private val AssessmentQuestion.nextAvailablePosition: Int
+    get() {
+      val maxPosition = assessmentQuestionTestcaseRepository.findMaxPositionByQuestionId(this.id!!)
+
+      return (maxPosition ?: 0) + 1
+    }
+
+  private fun requireGradingTestcasesKept(assessmentId: String, testcases: List<AssessmentQuestionTestcase>) {
+    if (testcases.any { it.type != AssessmentQuestionTestcaseType.PUBLIC } && assessmentSessionRepository.existsByAssessmentId(
+        assessmentId,
+      )
+    ) {
+      throw ConflictException("Estudantes já iniciaram a atividade: casos de teste privados e de avaliação não podem ser excluídos.")
+    }
+  }
 }

@@ -9,23 +9,23 @@ import org.springframework.stereotype.Component
 
 @Component
 class AssessmentSessionSweeper(
-    val assessmentSessionRepository: AssessmentSessionRepository,
-    val assessmentSessionService: AssessmentSessionService,
+  val assessmentSessionRepository: AssessmentSessionRepository,
+  val assessmentSessionService: AssessmentSessionService,
 ) {
 
-    private val log: Logger = LoggerFactory.getLogger(AssessmentSessionSweeper::class.java)
+  private val log: Logger = LoggerFactory.getLogger(AssessmentSessionSweeper::class.java)
 
-    @Scheduled(
-        fixedDelayString = "\${sessions.sweep-interval-ms:60000}",
-        initialDelayString = "\${sessions.sweep-interval-ms:60000}"
-    )
-    fun sweep() {
-        assessmentSessionRepository.findByState(AssessmentSessionState.IN_PROGRESS).forEach { session ->
-            try {
-                assessmentSessionService.refreshSession(session.id!!)
-            } catch (exception: RuntimeException) {
-                log.error("Failed to refresh session {}", session.id, exception)
-            }
-        }
+  @Scheduled(
+    fixedDelayString = "\${sessions.sweep-interval-ms:60000}",
+    initialDelayString = "\${sessions.sweep-interval-ms:60000}",
+  )
+  fun sweep() {
+    assessmentSessionRepository.findByState(AssessmentSessionState.IN_PROGRESS).forEach { session ->
+      try {
+        assessmentSessionService.refreshSession(session.id!!)
+      } catch (exception: RuntimeException) {
+        log.error("Failed to refresh session {}", session.id, exception)
+      }
     }
+  }
 }

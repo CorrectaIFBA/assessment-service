@@ -10,13 +10,11 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class MyAssessmentSessionsControllerImpl(
-    val assessmentSessionService: AssessmentSessionService
+  val assessmentSessionService: AssessmentSessionService,
 ) : MyAssessmentSessionsController {
 
-    override fun getMySessions(
-        filter: SessionFilterRequest,
-        pagination: PaginationRequest
-    ): PagedResponse<GetAssessmentSessionResponse> {
-        return assessmentSessionService.getMySessions(filter, pagination)
-    }
+  override fun getMySessions(
+    filter: SessionFilterRequest,
+    pagination: PaginationRequest,
+  ): PagedResponse<GetAssessmentSessionResponse> = assessmentSessionService.getMySessions(filter, pagination)
 }

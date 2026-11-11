@@ -22,56 +22,54 @@ import org.springframework.test.web.servlet.post
 @SpringBootTest
 @AutoConfigureMockMvc
 class CohortAssignmentTests(
-    @Autowired val mockMvc: MockMvc
+  @Autowired val mockMvc: MockMvc,
 ) {
 
-    @MockitoBean
-    lateinit var cohortClient: CohortClient
+  @MockitoBean
+  lateinit var cohortClient: CohortClient
 
-    @Test
-    fun `assigns the assessment to a cohort where the caller is active faculty`() {
-        `when`(cohortClient.getCurrentMembership("cohort-1", "faculty-a"))
-            .thenReturn(CohortMembershipResponse("cohort-1", "ACTIVE", "faculty-a", "FACULTY"))
+  @Test
+  fun `assigns the assessment to a cohort where the caller is active faculty`() {
+    `when`(cohortClient.getCurrentMembership("cohort-1", "faculty-a"))
+      .thenReturn(CohortMembershipResponse("cohort-1", "ACTIVE", "faculty-a", "FACULTY"))
 
-        createAssessment("faculty-a", "cohort-1").andExpect {
-            status { isCreated() }
-            jsonPath("$.cohortId") { value("cohort-1") }
-        }
+    createAssessment("faculty-a", "cohort-1").andExpect {
+      status { isCreated() }
+      jsonPath("$.cohortId") { value("cohort-1") }
     }
+  }
 
-    @Test
-    fun `rejects students, non-members and inactive cohorts`() {
-        `when`(cohortClient.getCurrentMembership("cohort-1", "student-a"))
-            .thenReturn(CohortMembershipResponse("cohort-1", "ACTIVE", "student-a", "STUDENT"))
-        `when`(cohortClient.getCurrentMembership("cohort-1", "outsider"))
-            .thenThrow(feignError(404))
-        `when`(cohortClient.getCurrentMembership("cohort-2", "faculty-a"))
-            .thenReturn(CohortMembershipResponse("cohort-2", "ARCHIVED", "faculty-a", "FACULTY"))
+  @Test
+  fun `rejects students, non-members and inactive cohorts`() {
+    `when`(cohortClient.getCurrentMembership("cohort-1", "student-a"))
+      .thenReturn(CohortMembershipResponse("cohort-1", "ACTIVE", "student-a", "STUDENT"))
+    `when`(cohortClient.getCurrentMembership("cohort-1", "outsider"))
+      .thenThrow(feignError(404))
+    `when`(cohortClient.getCurrentMembership("cohort-2", "faculty-a"))
+      .thenReturn(CohortMembershipResponse("cohort-2", "ARCHIVED", "faculty-a", "FACULTY"))
 
-        createAssessment("student-a", "cohort-1").andExpect { status { isForbidden() } }
-        createAssessment("outsider", "cohort-1").andExpect { status { isForbidden() } }
-        createAssessment("faculty-a", "cohort-2").andExpect { status { isConflict() } }
-    }
+    createAssessment("student-a", "cohort-1").andExpect { status { isForbidden() } }
+    createAssessment("outsider", "cohort-1").andExpect { status { isForbidden() } }
+    createAssessment("faculty-a", "cohort-2").andExpect { status { isConflict() } }
+  }
 
-    @Test
-    fun `fails closed when cohort-service is unavailable`() {
-        `when`(cohortClient.getCurrentMembership("cohort-1", "faculty-a")).thenThrow(feignError(500))
+  @Test
+  fun `fails closed when cohort-service is unavailable`() {
+    `when`(cohortClient.getCurrentMembership("cohort-1", "faculty-a")).thenThrow(feignError(500))
 
-        createAssessment("faculty-a", "cohort-1").andExpect { status { isServiceUnavailable() } }
-    }
+    createAssessment("faculty-a", "cohort-1").andExpect { status { isServiceUnavailable() } }
+  }
 
-    private fun createAssessment(profileId: String, cohortId: String): ResultActionsDsl {
-        return mockMvc.post("/api/v1/assessments") {
-            header(IdentityHeaders.PROFILE_ID, profileId)
-            contentType = MediaType.APPLICATION_JSON
-            content = """{"title": "Lista 1", "cohortId": "$cohortId"}"""
-        }
-    }
+  private fun createAssessment(profileId: String, cohortId: String): ResultActionsDsl = mockMvc.post("/api/v1/assessments") {
+    header(IdentityHeaders.PROFILE_ID, profileId)
+    contentType = MediaType.APPLICATION_JSON
+    content = """{"title": "Lista 1", "cohortId": "$cohortId"}"""
+  }
 
-    private fun feignError(status: Int): FeignException {
-        val request = Request.create(Request.HttpMethod.GET, "/", emptyMap(), null, Charsets.UTF_8, null)
-        val response = Response.builder().status(status).request(request).headers(emptyMap()).build()
+  private fun feignError(status: Int): FeignException {
+    val request = Request.create(Request.HttpMethod.GET, "/", emptyMap(), null, Charsets.UTF_8, null)
+    val response = Response.builder().status(status).request(request).headers(emptyMap()).build()
 
-        return FeignException.errorStatus("CohortClient#getCurrentMembership", response)
-    }
+    return FeignException.errorStatus("CohortClient#getCurrentMembership", response)
+  }
 }

@@ -14,53 +14,45 @@ import org.springframework.web.bind.annotation.*
 @Tag(name = "Assessments", description = "Activities, lessons and exams accessible by the authenticated profile.")
 interface AssessmentsController {
 
+  @GetMapping
+  @IsLoggedUser
+  fun getMyAssessments(
+    @Valid @ParameterObject filter: AssessmentFilterRequest,
+    @Valid @ParameterObject pagination: PaginationRequest,
+  ): PagedResponse<GetAssessmentResponse>
 
-    @GetMapping
-    @IsLoggedUser
-    fun getMyAssessments(
-        @Valid @ParameterObject filter: AssessmentFilterRequest,
-        @Valid @ParameterObject pagination: PaginationRequest
-    ): PagedResponse<GetAssessmentResponse>
+  @GetMapping("/{assessmentId}")
+  @IsLoggedUser
+  fun getAssessment(@PathVariable assessmentId: String): GetAssessmentResponse
 
+  @GetMapping("/by-slug/{cohortId}/{slug}")
+  @IsLoggedUser
+  fun getAssessmentBySlug(@PathVariable cohortId: String, @PathVariable slug: String): GetAssessmentResponse
 
-    @GetMapping("/{assessmentId}")
-    @IsLoggedUser
-    fun getAssessment(@PathVariable assessmentId: String): GetAssessmentResponse
+  @PostMapping
+  @ResponseStatus(HttpStatus.CREATED)
+  @IsLoggedUser
+  fun createAssessment(@Valid @RequestBody body: CreateAssessmentRequest): GetAssessmentResponse
 
+  @PostMapping("/{assessmentId}/publish")
+  @IsLoggedUser
+  fun publishAssessment(@PathVariable assessmentId: String): GetAssessmentResponse
 
-    @GetMapping("/by-slug/{cohortId}/{slug}")
-    @IsLoggedUser
-    fun getAssessmentBySlug(@PathVariable cohortId: String, @PathVariable slug: String): GetAssessmentResponse
+  @PostMapping("/{assessmentId}/archive")
+  @IsLoggedUser
+  fun archiveAssessment(@PathVariable assessmentId: String): GetAssessmentResponse
 
+  @PostMapping("/{assessmentId}/edit")
+  @IsLoggedUser
+  fun editAssessment(
+    @PathVariable assessmentId: String,
+    @Valid @RequestBody body: UpdateAssessmentRequest,
+  ): GetAssessmentResponse
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    @IsLoggedUser
-    fun createAssessment(@Valid @RequestBody body: CreateAssessmentRequest): GetAssessmentResponse
-
-
-    @PostMapping("/{assessmentId}/publish")
-    @IsLoggedUser
-    fun publishAssessment(@PathVariable assessmentId: String): GetAssessmentResponse
-
-
-    @PostMapping("/{assessmentId}/archive")
-    @IsLoggedUser
-    fun archiveAssessment(@PathVariable assessmentId: String): GetAssessmentResponse
-
-
-    @PostMapping("/{assessmentId}/edit")
-    @IsLoggedUser
-    fun editAssessment(
-        @PathVariable assessmentId: String,
-        @Valid @RequestBody body: UpdateAssessmentRequest
-    ): GetAssessmentResponse
-
-
-    @PatchMapping("/{assessmentId}/parameters")
-    @IsLoggedUser
-    fun changeAssessmentParameters(
-        @PathVariable assessmentId: String,
-        @Valid @RequestBody body: ChangeAssessmentParametersRequest
-    ): GetAssessmentResponse
+  @PatchMapping("/{assessmentId}/parameters")
+  @IsLoggedUser
+  fun changeAssessmentParameters(
+    @PathVariable assessmentId: String,
+    @Valid @RequestBody body: ChangeAssessmentParametersRequest,
+  ): GetAssessmentResponse
 }

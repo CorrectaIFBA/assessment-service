@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface AssessmentParameterChangeLogRepository : JpaRepository<AssessmentParameterChangeLog, String> {
-    fun findByAssessmentId(assessmentId: String, pageable: Pageable): Page<AssessmentParameterChangeLog>
+  fun findByAssessmentId(assessmentId: String, pageable: Pageable): Page<AssessmentParameterChangeLog>
 
-    fun deleteByAssessmentId(assessmentId: String)
+  fun deleteByAssessmentId(assessmentId: String)
 }

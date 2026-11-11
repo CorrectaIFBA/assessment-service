@@ -13,5 +13,5 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy
 class AssessmentServiceApplication
 
 fun main(args: Array<String>) {
-    runApplication<AssessmentServiceApplication>(*args)
+  runApplication<AssessmentServiceApplication>(*args)
 }

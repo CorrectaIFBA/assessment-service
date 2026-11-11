@@ -9,15 +9,13 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class InternalAssessmentQuestionsControllerImpl(
-    val assessmentQuestionService: AssessmentQuestionService
+  val assessmentQuestionService: AssessmentQuestionService,
 ) : InternalAssessmentQuestionsController {
 
-    override fun getQuestion(
-        assessmentId: String,
-        questionId: String,
-        language: ProgrammingLanguage,
-        types: List<AssessmentQuestionTestcaseType>?
-    ): GetInternalAssessmentQuestionResponse {
-        return assessmentQuestionService.getInternalQuestion(assessmentId, questionId, language, types)
-    }
+  override fun getQuestion(
+    assessmentId: String,
+    questionId: String,
+    language: ProgrammingLanguage,
+    types: List<AssessmentQuestionTestcaseType>?,
+  ): GetInternalAssessmentQuestionResponse = assessmentQuestionService.getInternalQuestion(assessmentId, questionId, language, types)
 }

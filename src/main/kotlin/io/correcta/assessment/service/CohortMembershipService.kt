@@ -10,20 +10,18 @@ import org.springframework.stereotype.Service
 
 @Service
 class CohortMembershipService(
-    val cohortClient: CohortClient
+  val cohortClient: CohortClient,
 ) {
 
-    private val log: Logger = LoggerFactory.getLogger(CohortMembershipService::class.java)
+  private val log: Logger = LoggerFactory.getLogger(CohortMembershipService::class.java)
 
-    fun findCurrentMembership(cohortId: String, profileId: String): CohortMembershipResponse? {
-        return try {
-            cohortClient.getCurrentMembership(cohortId, profileId)
-        } catch (exception: FeignException.NotFound) {
-            null
-        } catch (exception: FeignException) {
-            log.error("Cohort-service request failed with status {}", exception.status(), exception)
+  fun findCurrentMembership(cohortId: String, profileId: String): CohortMembershipResponse? = try {
+    cohortClient.getCurrentMembership(cohortId, profileId)
+  } catch (exception: FeignException.NotFound) {
+    null
+  } catch (exception: FeignException) {
+    log.error("Cohort-service request failed with status {}", exception.status(), exception)
 
-            throw ServiceUnavailableException("O serviço de turmas está indisponível no momento. Tente novamente mais tarde.")
-        }
-    }
+    throw ServiceUnavailableException("O serviço de turmas está indisponível no momento. Tente novamente mais tarde.")
+  }
 }

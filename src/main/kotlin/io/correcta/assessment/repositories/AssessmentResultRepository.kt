@@ -6,8 +6,8 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface AssessmentResultRepository : JpaRepository<AssessmentResult, String> {
-    fun findByAssessmentIdInAndStudentProfileId(
-        assessmentIds: Collection<String>,
-        studentProfileId: String
-    ): List<AssessmentResult>
+  fun findByAssessmentIdInAndStudentProfileId(
+    assessmentIds: Collection<String>,
+    studentProfileId: String,
+  ): List<AssessmentResult>
 }

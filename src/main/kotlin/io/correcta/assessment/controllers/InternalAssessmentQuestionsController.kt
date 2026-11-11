@@ -13,11 +13,11 @@ import org.springframework.web.bind.annotation.RequestParam
 @Tag(name = "Internal", description = "Service-to-service endpoints, not exposed through the gateway.")
 interface InternalAssessmentQuestionsController {
 
-    @GetMapping("/{questionId}")
-    fun getQuestion(
-        @PathVariable assessmentId: String,
-        @PathVariable questionId: String,
-        @RequestParam language: ProgrammingLanguage,
-        @RequestParam(required = false) types: List<AssessmentQuestionTestcaseType>?
-    ): GetInternalAssessmentQuestionResponse
+  @GetMapping("/{questionId}")
+  fun getQuestion(
+    @PathVariable assessmentId: String,
+    @PathVariable questionId: String,
+    @RequestParam language: ProgrammingLanguage,
+    @RequestParam(required = false) types: List<AssessmentQuestionTestcaseType>?,
+  ): GetInternalAssessmentQuestionResponse
 }

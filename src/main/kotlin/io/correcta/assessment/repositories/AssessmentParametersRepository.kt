@@ -6,9 +6,9 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface AssessmentParametersRepository : JpaRepository<AssessmentParameters, String> {
-    fun findByAssessmentId(assessmentId: String): AssessmentParameters?
+  fun findByAssessmentId(assessmentId: String): AssessmentParameters?
 
-    fun findAllByAssessmentIdIn(assessmentIds: Collection<String>): List<AssessmentParameters>
+  fun findAllByAssessmentIdIn(assessmentIds: Collection<String>): List<AssessmentParameters>
 
-    fun deleteByAssessmentId(assessmentId: String)
+  fun deleteByAssessmentId(assessmentId: String)
 }

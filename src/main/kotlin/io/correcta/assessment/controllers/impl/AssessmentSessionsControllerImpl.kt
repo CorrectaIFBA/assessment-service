@@ -15,60 +15,42 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class AssessmentSessionsControllerImpl(
-    val assessmentSessionService: AssessmentSessionService
+  val assessmentSessionService: AssessmentSessionService,
 ) : AssessmentSessionsController {
 
-    override fun getMySession(assessmentId: String): GetAssessmentSessionResponse {
-        return assessmentSessionService.getMySession(assessmentId)
-    }
+  override fun getMySession(assessmentId: String): GetAssessmentSessionResponse = assessmentSessionService.getMySession(assessmentId)
 
-    override fun startSession(assessmentId: String): ResponseEntity<GetAssessmentSessionResponse> {
-        val (session, created) = assessmentSessionService.startSession(assessmentId)
+  override fun startSession(assessmentId: String): ResponseEntity<GetAssessmentSessionResponse> {
+    val (session, created) = assessmentSessionService.startSession(assessmentId)
 
-        return ResponseEntity.status(if (created) HttpStatus.CREATED else HttpStatus.OK).body(session)
-    }
+    return ResponseEntity.status(if (created) HttpStatus.CREATED else HttpStatus.OK).body(session)
+  }
 
-    override fun heartbeat(assessmentId: String): GetAssessmentSessionResponse {
-        return assessmentSessionService.heartbeat(assessmentId)
-    }
+  override fun heartbeat(assessmentId: String): GetAssessmentSessionResponse = assessmentSessionService.heartbeat(assessmentId)
 
-    override fun getSessions(
-        assessmentId: String,
-        filter: SessionFilterRequest,
-        pagination: PaginationRequest
-    ): PagedResponse<GetAssessmentSessionResponse> {
-        return assessmentSessionService.getSessions(assessmentId, filter, pagination)
-    }
+  override fun getSessions(
+    assessmentId: String,
+    filter: SessionFilterRequest,
+    pagination: PaginationRequest,
+  ): PagedResponse<GetAssessmentSessionResponse> = assessmentSessionService.getSessions(assessmentId, filter, pagination)
 
-    override fun countSessions(assessmentId: String): Map<AssessmentSessionState, Long> {
-        return assessmentSessionService.countSessions(assessmentId)
-    }
+  override fun countSessions(assessmentId: String): Map<AssessmentSessionState, Long> = assessmentSessionService.countSessions(assessmentId)
 
-    override fun getSession(assessmentId: String, sessionId: String): GetAssessmentSessionResponse {
-        return assessmentSessionService.getSession(assessmentId, sessionId)
-    }
+  override fun getSession(assessmentId: String, sessionId: String): GetAssessmentSessionResponse = assessmentSessionService.getSession(assessmentId, sessionId)
 
-    override fun getSessionEvents(assessmentId: String, sessionId: String): List<GetAssessmentSessionEventResponse> {
-        return assessmentSessionService.getSessionEvents(assessmentId, sessionId)
-    }
+  override fun getSessionEvents(assessmentId: String, sessionId: String): List<GetAssessmentSessionEventResponse> = assessmentSessionService.getSessionEvents(assessmentId, sessionId)
 
-    override fun reopenSession(
-        assessmentId: String,
-        sessionId: String,
-        body: SessionTimeChangeRequest
-    ): GetAssessmentSessionResponse {
-        return assessmentSessionService.reopenSession(assessmentId, sessionId, body)
-    }
+  override fun reopenSession(
+    assessmentId: String,
+    sessionId: String,
+    body: SessionTimeChangeRequest,
+  ): GetAssessmentSessionResponse = assessmentSessionService.reopenSession(assessmentId, sessionId, body)
 
-    override fun extendSession(
-        assessmentId: String,
-        sessionId: String,
-        body: SessionTimeChangeRequest
-    ): GetAssessmentSessionResponse {
-        return assessmentSessionService.extendSession(assessmentId, sessionId, body)
-    }
+  override fun extendSession(
+    assessmentId: String,
+    sessionId: String,
+    body: SessionTimeChangeRequest,
+  ): GetAssessmentSessionResponse = assessmentSessionService.extendSession(assessmentId, sessionId, body)
 
-    override fun closeSession(assessmentId: String, sessionId: String): GetAssessmentSessionResponse {
-        return assessmentSessionService.closeSession(assessmentId, sessionId)
-    }
+  override fun closeSession(assessmentId: String, sessionId: String): GetAssessmentSessionResponse = assessmentSessionService.closeSession(assessmentId, sessionId)
 }

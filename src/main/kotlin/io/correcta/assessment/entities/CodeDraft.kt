@@ -7,13 +7,13 @@ import jakarta.persistence.Enumerated
 
 @Embeddable
 class CodeDraft(
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    var language: ProgrammingLanguage,
+  @Column(nullable = false)
+  @Enumerated(EnumType.STRING)
+  var language: ProgrammingLanguage,
 
-    @Column(nullable = false, columnDefinition = "TEXT")
-    var code: String = "",
+  @Column(nullable = false, columnDefinition = "TEXT")
+  var code: String = "",
 
-    @Column(nullable = false, columnDefinition = "TEXT")
-    var harness: String = "",
+  @Column(nullable = false, columnDefinition = "TEXT")
+  var harness: String = "",
 )

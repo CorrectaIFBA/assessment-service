@@ -12,61 +12,49 @@ import org.springframework.web.multipart.MultipartFile
 
 @RestController
 class AssessmentQuestionTestcasesControllerImpl(
-    val assessmentQuestionTestcaseService: AssessmentQuestionTestcaseService
+  val assessmentQuestionTestcaseService: AssessmentQuestionTestcaseService,
 ) : AssessmentQuestionTestcasesController {
 
-    override fun getTestcases(assessmentId: String, questionId: String): List<GetAssessmentQuestionTestcaseResponse> {
-        return assessmentQuestionTestcaseService.getTestcases(assessmentId, questionId)
-    }
+  override fun getTestcases(assessmentId: String, questionId: String): List<GetAssessmentQuestionTestcaseResponse> = assessmentQuestionTestcaseService.getTestcases(assessmentId, questionId)
 
-    override fun createTestcase(
-        assessmentId: String,
-        questionId: String,
-        body: CreateAssessmentQuestionTestcaseRequest
-    ): GetAssessmentQuestionTestcaseResponse {
-        return assessmentQuestionTestcaseService.createTestcase(assessmentId, questionId, body)
-    }
+  override fun createTestcase(
+    assessmentId: String,
+    questionId: String,
+    body: CreateAssessmentQuestionTestcaseRequest,
+  ): GetAssessmentQuestionTestcaseResponse = assessmentQuestionTestcaseService.createTestcase(assessmentId, questionId, body)
 
-    override fun editTestcase(
-        assessmentId: String,
-        questionId: String,
-        testcaseId: String,
-        body: UpdateAssessmentQuestionTestcaseRequest
-    ): GetAssessmentQuestionTestcaseResponse {
-        return assessmentQuestionTestcaseService.updateTestcase(assessmentId, questionId, testcaseId, body)
-    }
+  override fun editTestcase(
+    assessmentId: String,
+    questionId: String,
+    testcaseId: String,
+    body: UpdateAssessmentQuestionTestcaseRequest,
+  ): GetAssessmentQuestionTestcaseResponse = assessmentQuestionTestcaseService.updateTestcase(assessmentId, questionId, testcaseId, body)
 
-    override fun bulkEditTestcases(
-        assessmentId: String,
-        questionId: String,
-        body: BulkUpdateAssessmentQuestionTestcaseRequest
-    ): List<GetAssessmentQuestionTestcaseResponse> {
-        return assessmentQuestionTestcaseService.bulkUpdateTestcases(assessmentId, questionId, body)
-    }
+  override fun bulkEditTestcases(
+    assessmentId: String,
+    questionId: String,
+    body: BulkUpdateAssessmentQuestionTestcaseRequest,
+  ): List<GetAssessmentQuestionTestcaseResponse> = assessmentQuestionTestcaseService.bulkUpdateTestcases(assessmentId, questionId, body)
 
-    override fun deleteTestcase(assessmentId: String, questionId: String, testcaseId: String) {
-        assessmentQuestionTestcaseService.deleteTestcase(assessmentId, questionId, testcaseId)
-    }
+  override fun deleteTestcase(assessmentId: String, questionId: String, testcaseId: String) {
+    assessmentQuestionTestcaseService.deleteTestcase(assessmentId, questionId, testcaseId)
+  }
 
-    override fun bulkDeleteTestcases(assessmentId: String, questionId: String, body: List<String>) {
-        assessmentQuestionTestcaseService.bulkDeleteTestcases(assessmentId, questionId, body)
-    }
+  override fun bulkDeleteTestcases(assessmentId: String, questionId: String, body: List<String>) {
+    assessmentQuestionTestcaseService.bulkDeleteTestcases(assessmentId, questionId, body)
+  }
 
-    override fun importTestcases(
-        assessmentId: String,
-        questionId: String,
-        body: ImportAssessmentQuestionTestcasesRequest,
-        inputs: MultipartFile,
-        outputs: MultipartFile
-    ): List<GetAssessmentQuestionTestcaseResponse> {
-        return assessmentQuestionTestcaseService.importTestcases(assessmentId, questionId, body, inputs, outputs)
-    }
+  override fun importTestcases(
+    assessmentId: String,
+    questionId: String,
+    body: ImportAssessmentQuestionTestcasesRequest,
+    inputs: MultipartFile,
+    outputs: MultipartFile,
+  ): List<GetAssessmentQuestionTestcaseResponse> = assessmentQuestionTestcaseService.importTestcases(assessmentId, questionId, body, inputs, outputs)
 
-    override fun reorderTestcases(
-        assessmentId: String,
-        questionId: String,
-        body: List<String>
-    ): List<GetAssessmentQuestionTestcaseResponse> {
-        return assessmentQuestionTestcaseService.reorderTestcases(assessmentId, questionId, body)
-    }
+  override fun reorderTestcases(
+    assessmentId: String,
+    questionId: String,
+    body: List<String>,
+  ): List<GetAssessmentQuestionTestcaseResponse> = assessmentQuestionTestcaseService.reorderTestcases(assessmentId, questionId, body)
 }

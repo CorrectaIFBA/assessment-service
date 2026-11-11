@@ -17,83 +17,75 @@ import org.springframework.web.multipart.MultipartFile
 @Tag(name = "Assessment Question Testcases", description = "Test cases a question's answers are run against.")
 interface AssessmentQuestionTestcasesController {
 
+  @GetMapping
+  @IsLoggedUser
+  fun getTestcases(
+    @PathVariable assessmentId: String,
+    @PathVariable questionId: String,
+  ): List<GetAssessmentQuestionTestcaseResponse>
 
-    @GetMapping
-    @IsLoggedUser
-    fun getTestcases(
-        @PathVariable assessmentId: String,
-        @PathVariable questionId: String
-    ): List<GetAssessmentQuestionTestcaseResponse>
+  @PostMapping
+  @ResponseStatus(HttpStatus.CREATED)
+  @IsLoggedUser
+  fun createTestcase(
+    @PathVariable assessmentId: String,
+    @PathVariable questionId: String,
+    @Valid @RequestBody body: CreateAssessmentQuestionTestcaseRequest,
+  ): GetAssessmentQuestionTestcaseResponse
 
+  @PostMapping("/{testcaseId}/edit")
+  @IsLoggedUser
+  fun editTestcase(
+    @PathVariable assessmentId: String,
+    @PathVariable questionId: String,
+    @PathVariable testcaseId: String,
+    @Valid @RequestBody body: UpdateAssessmentQuestionTestcaseRequest,
+  ): GetAssessmentQuestionTestcaseResponse
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    @IsLoggedUser
-    fun createTestcase(
-        @PathVariable assessmentId: String,
-        @PathVariable questionId: String,
-        @Valid @RequestBody body: CreateAssessmentQuestionTestcaseRequest
-    ): GetAssessmentQuestionTestcaseResponse
+  @PostMapping("/bulk-edit")
+  @IsLoggedUser
+  fun bulkEditTestcases(
+    @PathVariable assessmentId: String,
+    @PathVariable questionId: String,
+    @Valid @RequestBody body: BulkUpdateAssessmentQuestionTestcaseRequest,
+  ): List<GetAssessmentQuestionTestcaseResponse>
 
+  @DeleteMapping("/{testcaseId}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @IsLoggedUser
+  fun deleteTestcase(
+    @PathVariable assessmentId: String,
+    @PathVariable questionId: String,
+    @PathVariable testcaseId: String,
+  )
 
-    @PostMapping("/{testcaseId}/edit")
-    @IsLoggedUser
-    fun editTestcase(
-        @PathVariable assessmentId: String,
-        @PathVariable questionId: String,
-        @PathVariable testcaseId: String,
-        @Valid @RequestBody body: UpdateAssessmentQuestionTestcaseRequest
-    ): GetAssessmentQuestionTestcaseResponse
+  @PostMapping("/bulk-delete")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @IsLoggedUser
+  fun bulkDeleteTestcases(
+    @PathVariable assessmentId: String,
+    @PathVariable questionId: String,
+    @RequestBody body: List<String>,
+  )
 
+  @PostMapping(
+    "/import",
+    consumes = [MediaType.MULTIPART_FORM_DATA_VALUE],
+  )
+  @IsLoggedUser
+  fun importTestcases(
+    @PathVariable assessmentId: String,
+    @PathVariable questionId: String,
+    @Valid @RequestPart("body") body: ImportAssessmentQuestionTestcasesRequest,
+    @RequestPart("inputs") inputs: MultipartFile,
+    @RequestPart("outputs") outputs: MultipartFile,
+  ): List<GetAssessmentQuestionTestcaseResponse>
 
-    @PostMapping("/bulk-edit")
-    @IsLoggedUser
-    fun bulkEditTestcases(
-        @PathVariable assessmentId: String,
-        @PathVariable questionId: String,
-        @Valid @RequestBody body: BulkUpdateAssessmentQuestionTestcaseRequest
-    ): List<GetAssessmentQuestionTestcaseResponse>
-
-
-    @DeleteMapping("/{testcaseId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    @IsLoggedUser
-    fun deleteTestcase(
-        @PathVariable assessmentId: String,
-        @PathVariable questionId: String,
-        @PathVariable testcaseId: String
-    )
-
-
-    @PostMapping("/bulk-delete")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    @IsLoggedUser
-    fun bulkDeleteTestcases(
-        @PathVariable assessmentId: String,
-        @PathVariable questionId: String,
-        @RequestBody body: List<String>
-    )
-
-
-    @PostMapping(
-        "/import",
-        consumes = [MediaType.MULTIPART_FORM_DATA_VALUE]
-    )
-    @IsLoggedUser
-    fun importTestcases(
-        @PathVariable assessmentId: String,
-        @PathVariable questionId: String,
-        @Valid @RequestPart("body") body: ImportAssessmentQuestionTestcasesRequest,
-        @RequestPart("inputs") inputs: MultipartFile,
-        @RequestPart("outputs") outputs: MultipartFile
-    ): List<GetAssessmentQuestionTestcaseResponse>
-
-
-    @PostMapping("/reorder")
-    @IsLoggedUser
-    fun reorderTestcases(
-        @PathVariable assessmentId: String,
-        @PathVariable questionId: String,
-        @Valid @RequestBody body: List<String>
-    ): List<GetAssessmentQuestionTestcaseResponse>
+  @PostMapping("/reorder")
+  @IsLoggedUser
+  fun reorderTestcases(
+    @PathVariable assessmentId: String,
+    @PathVariable questionId: String,
+    @Valid @RequestBody body: List<String>,
+  ): List<GetAssessmentQuestionTestcaseResponse>
 }

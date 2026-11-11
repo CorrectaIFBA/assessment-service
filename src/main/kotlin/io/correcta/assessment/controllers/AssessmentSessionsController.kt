@@ -16,71 +16,63 @@ import org.springframework.web.bind.annotation.*
 
 @RequestMapping("/api/v1/assessments/{assessmentId}/sessions")
 @Tag(
-    name = "Assessment Sessions",
-    description = "A student's attempt at an assessment: start, heartbeats and submission."
+  name = "Assessment Sessions",
+  description = "A student's attempt at an assessment: start, heartbeats and submission.",
 )
 interface AssessmentSessionsController {
 
+  @GetMapping("/me")
+  @IsLoggedUser
+  fun getMySession(@PathVariable assessmentId: String): GetAssessmentSessionResponse
 
-    @GetMapping("/me")
-    @IsLoggedUser
-    fun getMySession(@PathVariable assessmentId: String): GetAssessmentSessionResponse
+  @PostMapping("/me/start")
+  @IsLoggedUser
+  fun startSession(@PathVariable assessmentId: String): ResponseEntity<GetAssessmentSessionResponse>
 
+  @PostMapping("/me/heartbeat")
+  @IsLoggedUser
+  fun heartbeat(@PathVariable assessmentId: String): GetAssessmentSessionResponse
 
-    @PostMapping("/me/start")
-    @IsLoggedUser
-    fun startSession(@PathVariable assessmentId: String): ResponseEntity<GetAssessmentSessionResponse>
+  @GetMapping
+  @IsLoggedUser
+  fun getSessions(
+    @PathVariable assessmentId: String,
+    @Valid @ParameterObject filter: SessionFilterRequest,
+    @Valid @ParameterObject pagination: PaginationRequest,
+  ): PagedResponse<GetAssessmentSessionResponse>
 
+  @GetMapping("/summary")
+  @IsLoggedUser
+  fun countSessions(@PathVariable assessmentId: String): Map<AssessmentSessionState, Long>
 
-    @PostMapping("/me/heartbeat")
-    @IsLoggedUser
-    fun heartbeat(@PathVariable assessmentId: String): GetAssessmentSessionResponse
+  @GetMapping("/{sessionId}")
+  @IsLoggedUser
+  fun getSession(@PathVariable assessmentId: String, @PathVariable sessionId: String): GetAssessmentSessionResponse
 
+  @GetMapping("/{sessionId}/events")
+  @IsLoggedUser
+  fun getSessionEvents(
+    @PathVariable assessmentId: String,
+    @PathVariable sessionId: String,
+  ): List<GetAssessmentSessionEventResponse>
 
-    @GetMapping
-    @IsLoggedUser
-    fun getSessions(
-        @PathVariable assessmentId: String,
-        @Valid @ParameterObject filter: SessionFilterRequest,
-        @Valid @ParameterObject pagination: PaginationRequest
-    ): PagedResponse<GetAssessmentSessionResponse>
+  @PostMapping("/{sessionId}/reopen")
+  @IsLoggedUser
+  fun reopenSession(
+    @PathVariable assessmentId: String,
+    @PathVariable sessionId: String,
+    @Valid @RequestBody body: SessionTimeChangeRequest,
+  ): GetAssessmentSessionResponse
 
+  @PostMapping("/{sessionId}/extend")
+  @IsLoggedUser
+  fun extendSession(
+    @PathVariable assessmentId: String,
+    @PathVariable sessionId: String,
+    @Valid @RequestBody body: SessionTimeChangeRequest,
+  ): GetAssessmentSessionResponse
 
-    @GetMapping("/summary")
-    @IsLoggedUser
-    fun countSessions(@PathVariable assessmentId: String): Map<AssessmentSessionState, Long>
-
-    @GetMapping("/{sessionId}")
-    @IsLoggedUser
-    fun getSession(@PathVariable assessmentId: String, @PathVariable sessionId: String): GetAssessmentSessionResponse
-
-    @GetMapping("/{sessionId}/events")
-    @IsLoggedUser
-    fun getSessionEvents(
-        @PathVariable assessmentId: String,
-        @PathVariable sessionId: String
-    ): List<GetAssessmentSessionEventResponse>
-
-
-    @PostMapping("/{sessionId}/reopen")
-    @IsLoggedUser
-    fun reopenSession(
-        @PathVariable assessmentId: String,
-        @PathVariable sessionId: String,
-        @Valid @RequestBody body: SessionTimeChangeRequest
-    ): GetAssessmentSessionResponse
-
-
-    @PostMapping("/{sessionId}/extend")
-    @IsLoggedUser
-    fun extendSession(
-        @PathVariable assessmentId: String,
-        @PathVariable sessionId: String,
-        @Valid @RequestBody body: SessionTimeChangeRequest
-    ): GetAssessmentSessionResponse
-
-
-    @PostMapping("/{sessionId}/close")
-    @IsLoggedUser
-    fun closeSession(@PathVariable assessmentId: String, @PathVariable sessionId: String): GetAssessmentSessionResponse
+  @PostMapping("/{sessionId}/close")
+  @IsLoggedUser
+  fun closeSession(@PathVariable assessmentId: String, @PathVariable sessionId: String): GetAssessmentSessionResponse
 }

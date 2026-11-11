@@ -15,93 +15,79 @@ import jakarta.persistence.EntityManager
 import jakarta.persistence.LockModeType
 import org.springframework.stereotype.Service
 
-
 @Service
 class AssessmentAccessService(
-    val assessmentRepository: AssessmentRepository,
-    val scopeEvaluator: ScopeEvaluatorComponent,
-    val cohortMembershipService: CohortMembershipService,
-    val assessmentSessionRepository: AssessmentSessionRepository,
-    val entityManager: EntityManager,
+  val assessmentRepository: AssessmentRepository,
+  val scopeEvaluator: ScopeEvaluatorComponent,
+  val cohortMembershipService: CohortMembershipService,
+  val assessmentSessionRepository: AssessmentSessionRepository,
+  val entityManager: EntityManager,
 ) {
 
+  fun findReadableAssessment(assessmentId: String): Assessment = findReadableAssessmentWithMembership(assessmentId).first
 
-    fun findReadableAssessment(assessmentId: String): Assessment {
-        return findReadableAssessmentWithMembership(assessmentId).first
+  fun findAssessmentWithVisibleQuestions(assessmentId: String): Assessment {
+    val (assessment, membership) = findReadableAssessmentWithMembership(assessmentId)
+
+    if (!membership.isFaculty() &&
+      assessmentSessionRepository.findByAssessmentIdAndStudentProfileId(
+        assessmentId,
+        membership.profileId,
+      ) == null
+    ) {
+      throw ForbiddenException("Inicie a atividade para ver as questões.")
     }
 
+    return assessment
+  }
 
-    fun findAssessmentWithVisibleQuestions(assessmentId: String): Assessment {
-        val (assessment, membership) = findReadableAssessmentWithMembership(assessmentId)
+  fun findReadableAssessmentWithMembership(assessmentId: String): Pair<Assessment, CohortMembershipResponse> {
+    val assessment = findAssessment(assessmentId)
+    val membership = requireCohortMember(assessment.cohortId ?: throw assessmentNotFound())
 
-        if (!membership.isFaculty() &&
-            assessmentSessionRepository.findByAssessmentIdAndStudentProfileId(
-                assessmentId,
-                membership.profileId
-            ) == null
-        ) {
-            throw ForbiddenException("Inicie a atividade para ver as questões.")
-        }
-
-        return assessment
+    if (!membership.isFaculty() && assessment.state != AssessmentState.PUBLISHED) {
+      throw assessmentNotFound()
     }
 
+    return assessment to membership
+  }
 
-    fun findReadableAssessmentWithMembership(assessmentId: String): Pair<Assessment, CohortMembershipResponse> {
-        val assessment = findAssessment(assessmentId)
-        val membership = requireCohortMember(assessment.cohortId ?: throw assessmentNotFound())
+  fun findManageableAssessment(assessmentId: String): Assessment {
+    val assessment = findAssessment(assessmentId)
 
-        if (!membership.isFaculty() && assessment.state != AssessmentState.PUBLISHED) {
-            throw assessmentNotFound()
-        }
+    requireActiveCohortFaculty(assessment.cohortId ?: throw assessmentNotFound())
+    entityManager.refresh(assessment, LockModeType.PESSIMISTIC_WRITE)
 
-        return assessment to membership
+    return assessment
+  }
+
+  fun requireActiveCohortFaculty(cohortId: String): CohortMembershipResponse {
+    val membership = cohortMembershipService.findCurrentMembership(cohortId, getAuthenticatedProfile().profileId)
+
+    if (membership == null || !membership.isFaculty()) {
+      throw ForbiddenException("Apenas docentes da turma podem gerenciar suas atividades.")
     }
 
-
-    fun findManageableAssessment(assessmentId: String): Assessment {
-        val assessment = findAssessment(assessmentId)
-
-        requireActiveCohortFaculty(assessment.cohortId ?: throw assessmentNotFound())
-        entityManager.refresh(assessment, LockModeType.PESSIMISTIC_WRITE)
-
-        return assessment
+    if (membership.cohortStatus != ACTIVE_COHORT_STATUS) {
+      throw ConflictException("A turma não está ativa.")
     }
 
-    fun requireActiveCohortFaculty(cohortId: String): CohortMembershipResponse {
-        val membership = cohortMembershipService.findCurrentMembership(cohortId, getAuthenticatedProfile().profileId)
+    return membership
+  }
 
-        if (membership == null || !membership.isFaculty()) {
-            throw ForbiddenException("Apenas docentes da turma podem gerenciar suas atividades.")
-        }
+  fun requireCohortMember(cohortId: String): CohortMembershipResponse = cohortMembershipService.findCurrentMembership(cohortId, getAuthenticatedProfile().profileId)
+    ?: throw ForbiddenException("Apenas membros da turma podem acessar atividades atribuídas a ela.")
 
-        if (membership.cohortStatus != ACTIVE_COHORT_STATUS) {
-            throw ConflictException("A turma não está ativa.")
-        }
+  fun getAuthenticatedProfile(): ProfilePrincipal = scopeEvaluator.currentProfile()
+    ?: throw InternalServerErrorException("Falha ao recuperar o principal da autenticação")
 
-        return membership
-    }
+  private fun findAssessment(assessmentId: String): Assessment = assessmentRepository.findById(assessmentId).orElseThrow { assessmentNotFound() }
 
+  private fun assessmentNotFound() = NotFoundException("Atividade não encontrada.")
 
-    fun requireCohortMember(cohortId: String): CohortMembershipResponse {
-        return cohortMembershipService.findCurrentMembership(cohortId, getAuthenticatedProfile().profileId)
-            ?: throw ForbiddenException("Apenas membros da turma podem acessar atividades atribuídas a ela.")
-    }
-
-    fun getAuthenticatedProfile(): ProfilePrincipal {
-        return scopeEvaluator.currentProfile()
-            ?: throw InternalServerErrorException("Falha ao recuperar o principal da autenticação")
-    }
-
-    private fun findAssessment(assessmentId: String): Assessment {
-        return assessmentRepository.findById(assessmentId).orElseThrow { assessmentNotFound() }
-    }
-
-    private fun assessmentNotFound() = NotFoundException("Atividade não encontrada.")
-
-    companion object {
-        private const val ACTIVE_COHORT_STATUS = "ACTIVE"
-    }
+  companion object {
+    private const val ACTIVE_COHORT_STATUS = "ACTIVE"
+  }
 }
 
 fun CohortMembershipResponse.isFaculty(): Boolean = role == "FACULTY"

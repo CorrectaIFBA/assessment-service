@@ -22,6 +22,7 @@ import io.correcta.assessment.utils.SlugExt.uniqueSlug
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
+/** Business rules of the questions of an assessment. */
 @Service
 class AssessmentQuestionService(
   val assessmentQuestionRepository: AssessmentQuestionRepository,
@@ -30,6 +31,7 @@ class AssessmentQuestionService(
   val assessmentQuestionTestcaseRepository: AssessmentQuestionTestcaseRepository,
 ) {
 
+  /** Lists the questions visible to the caller, ordered by position. */
   @Transactional(readOnly = true)
   fun getQuestions(assessmentId: String): List<GetAssessmentQuestionResponse> {
     val assessment = assessmentAccessService.findAssessmentWithVisibleQuestions(assessmentId)
@@ -40,6 +42,7 @@ class AssessmentQuestionService(
       .map { GetAssessmentQuestionResponse.fromQuestion(it, isFaculty) }
   }
 
+  /** Returns one question visible to the caller. */
   @Transactional(readOnly = true)
   fun getQuestion(assessmentId: String, questionId: String): GetAssessmentQuestionResponse {
     val assessment = assessmentAccessService.findAssessmentWithVisibleQuestions(assessmentId)
@@ -48,6 +51,9 @@ class AssessmentQuestionService(
     return GetAssessmentQuestionResponse.fromQuestion(findQuestion(assessmentId, questionId), isFaculty)
   }
 
+  /**
+   * Returns the harness for [language] and the test cases of [types] (all types when empty). No access checks: internal use only.
+   */
   @Transactional(readOnly = true)
   fun getInternalQuestion(
     assessmentId: String,
@@ -74,6 +80,9 @@ class AssessmentQuestionService(
     )
   }
 
+  /**
+   * Creates a question at the given position, or after the last one. Without a slug, a unique slug is generated from the title.
+   */
   @Transactional
   fun createQuestion(assessmentId: String, request: CreateAssessmentQuestionRequest): GetAssessmentQuestionResponse {
     val assessment = assessmentAccessService.findManageableAssessment(assessmentId)
@@ -103,6 +112,9 @@ class AssessmentQuestionService(
     return GetAssessmentQuestionResponse.fromQuestion(question, isFaculty = true)
   }
 
+  /**
+   * Replaces the fields of a question. The maximum grade cannot change after a student starts the assessment.
+   */
   @Transactional
   fun updateQuestion(
     assessmentId: String,
@@ -137,6 +149,7 @@ class AssessmentQuestionService(
     return GetAssessmentQuestionResponse.fromQuestion(assessmentQuestionRepository.saveAndFlush(question), isFaculty = true)
   }
 
+  /** Deletes a question before any student starts. A published assessment keeps at least one question. */
   @Transactional
   fun deleteQuestion(assessmentId: String, questionId: String) {
     val assessment = assessmentAccessService.findManageableAssessment(assessmentId)

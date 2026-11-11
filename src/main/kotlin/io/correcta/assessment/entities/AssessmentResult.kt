@@ -8,6 +8,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener
 import java.math.BigDecimal
 import java.time.Instant
 
+/** Final score and general faculty comment of one student in one assessment. */
 @Entity
 @Table(
   name = "assessment_results",

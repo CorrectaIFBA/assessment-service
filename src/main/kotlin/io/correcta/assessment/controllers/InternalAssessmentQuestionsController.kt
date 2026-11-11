@@ -9,10 +9,16 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
+/**
+ * Service-to-service question endpoints. They have no authentication and must not be reachable through the gateway.
+ */
 @RequestMapping("/api/v1/internal/assessments/{assessmentId}/questions")
 @Tag(name = "Internal", description = "Service-to-service endpoints, not exposed through the gateway.")
 interface InternalAssessmentQuestionsController {
 
+  /**
+   * Returns the harness of the question in [language] and its test cases, optionally filtered by [types].
+   */
   @GetMapping("/{questionId}")
   fun getQuestion(
     @PathVariable assessmentId: String,

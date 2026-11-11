@@ -7,6 +7,9 @@ import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
+/**
+ * Scheduled job that stores the expiry of running sessions whose time ran out, so `session.ended` is sent even without requests.
+ */
 @Component
 class AssessmentSessionSweeper(
   val assessmentSessionRepository: AssessmentSessionRepository,
@@ -15,6 +18,7 @@ class AssessmentSessionSweeper(
 
   private val log: Logger = LoggerFactory.getLogger(AssessmentSessionSweeper::class.java)
 
+  /** Refreshes every running session. A failure in one session does not stop the others. */
   @Scheduled(
     fixedDelayString = "\${sessions.sweep-interval-ms:60000}",
     initialDelayString = "\${sessions.sweep-interval-ms:60000}",

@@ -9,6 +9,9 @@ import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 
+/**
+ * Questions of an assessment. Faculty of the cohort manage them; students see them after they start the assessment.
+ */
 @RequestMapping("/api/v1/assessments/{assessmentId}/questions")
 @Tag(
   name = "Assessment Questions",
@@ -16,14 +19,17 @@ import org.springframework.web.bind.annotation.*
 )
 interface AssessmentQuestionsController {
 
+  /** Lists the questions of the assessment, ordered by position. */
   @GetMapping
   @IsLoggedUser
   fun getQuestions(@PathVariable assessmentId: String): List<GetAssessmentQuestionResponse>
 
+  /** Returns one question. The harness is only returned to faculty. */
   @GetMapping("/{questionId}")
   @IsLoggedUser
   fun getQuestion(@PathVariable assessmentId: String, @PathVariable questionId: String): GetAssessmentQuestionResponse
 
+  /** Creates a question. Faculty only. */
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   @IsLoggedUser
@@ -32,6 +38,7 @@ interface AssessmentQuestionsController {
     @Valid @RequestBody body: CreateAssessmentQuestionRequest,
   ): GetAssessmentQuestionResponse
 
+  /** Replaces the fields of a question. Faculty only. */
   @PostMapping("/{questionId}/edit")
   @IsLoggedUser
   fun editQuestion(
@@ -40,6 +47,7 @@ interface AssessmentQuestionsController {
     @Valid @RequestBody body: UpdateAssessmentQuestionRequest,
   ): GetAssessmentQuestionResponse
 
+  /** Deletes a question. Faculty only, and only before any student starts the assessment. */
   @DeleteMapping("/{questionId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @IsLoggedUser

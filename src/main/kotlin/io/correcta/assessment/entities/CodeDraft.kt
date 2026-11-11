@@ -5,6 +5,9 @@ import jakarta.persistence.Embeddable
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
 
+/**
+ * Starting [code] given to the student and hidden [harness] that runs the test cases, for one [language].
+ */
 @Embeddable
 class CodeDraft(
   @Column(nullable = false)

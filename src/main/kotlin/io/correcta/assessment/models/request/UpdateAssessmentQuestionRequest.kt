@@ -7,6 +7,7 @@ import jakarta.validation.Valid
 import jakarta.validation.constraints.*
 import java.math.BigDecimal
 
+/** Body to replace the fields of a question. */
 data class UpdateAssessmentQuestionRequest(
   @field:Schema(description = "Zero-based question position inside the assessment.", example = "0")
   @field:NotNull(message = "A posição é obrigatória")

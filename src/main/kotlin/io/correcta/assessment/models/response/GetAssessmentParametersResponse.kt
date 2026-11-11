@@ -2,6 +2,7 @@ package io.correcta.assessment.models.response
 
 import io.correcta.assessment.entities.AssessmentParameters
 
+/** Parameters of an assessment. */
 data class GetAssessmentParametersResponse(
   val id: String,
   val assessmentId: String,
@@ -15,6 +16,7 @@ data class GetAssessmentParametersResponse(
 
   companion object {
 
+    /** Maps saved [AssessmentParameters]. */
     fun fromParameters(parameters: AssessmentParameters): GetAssessmentParametersResponse = GetAssessmentParametersResponse(
       id = parameters.id!!,
       assessmentId = parameters.assessment.id!!,

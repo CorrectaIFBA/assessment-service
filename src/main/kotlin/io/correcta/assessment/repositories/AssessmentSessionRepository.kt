@@ -10,6 +10,9 @@ import org.springframework.data.jpa.repository.Lock
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
 
+/**
+ * Persistence of [AssessmentSession]. The `lockBy` queries take a pessimistic write lock until the transaction ends.
+ */
 @Repository
 interface AssessmentSessionRepository : JpaRepository<AssessmentSession, String> {
   fun findByAssessmentId(assessmentId: String, pageable: Pageable): Page<AssessmentSession>
@@ -58,6 +61,7 @@ interface AssessmentSessionRepository : JpaRepository<AssessmentSession, String>
   @Query("select s.state as state, count(s) as total from AssessmentSession s where s.assessment.id = :assessmentId group by s.state")
   fun countByStateOfAssessment(assessmentId: String): List<StateCount>
 
+  /** Projection of [countByStateOfAssessment]. */
   interface StateCount {
     val state: AssessmentSessionState
     val total: Long

@@ -5,6 +5,7 @@ plugins {
   id("org.springframework.boot") version "3.4.12"
   id("io.spring.dependency-management") version "1.1.7"
   id("com.diffplug.spotless") version "8.10.4"
+  jacoco
 }
 
 group = "io.correcta"
@@ -69,6 +70,14 @@ allOpen {
 
 tasks.withType<Test> {
   useJUnitPlatform()
+  finalizedBy(tasks.jacocoTestReport)
+}
+
+tasks.jacocoTestReport {
+  reports {
+    xml.required = true
+    html.required = true
+  }
 }
 
 val ktlintOverrides =

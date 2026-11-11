@@ -9,7 +9,7 @@ import org.springframework.amqp.core.TopicExchange
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
-/*
+/**
  * Assessment sessions between assessment-service and workspace-service.
  * Both services declare the whole topology (declarations are idempotent),
  * so a message published before the other side ever started is queued,
@@ -35,25 +35,29 @@ object SessionMessaging {
   const val SESSION_DELIVERED_QUEUE = "assessment-service.session-delivered"
 }
 
+/** Body of `session.ended`, sent to workspace-service. */
 data class SessionEndedMessage(
   val sessionId: String,
   val assessmentId: String,
   val studentProfileId: String,
   val state: String,
-  /* EXPIRED, CLOSED_BY_ARCHIVE or CLOSED_BY_FACULTY. */
+  /** Session event that ended the session: EXPIRED, CLOSED_BY_ARCHIVE or CLOSED_BY_FACULTY. */
   val reason: String,
   val endedAt: String,
 )
 
+/** Body of `session.delivered`, received from workspace-service. */
 data class SessionDeliveredMessage(
   val assessmentId: String,
   val studentProfileId: String,
   val deliveredAt: String,
 )
 
+/** Declares the exchanges, queues and dead-letter queues of [SessionMessaging]. */
 @Configuration
 class SessionMessagingConfig {
 
+  /** Each queue is bound to [SessionMessaging.EXCHANGE] and dead-letters to `<queue>.dlq`. */
   @Bean
   fun sessionMessagingTopology(): Declarables {
     val exchange = TopicExchange(SessionMessaging.EXCHANGE, true, false)

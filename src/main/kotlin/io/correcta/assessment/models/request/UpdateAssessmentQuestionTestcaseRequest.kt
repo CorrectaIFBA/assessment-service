@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 
+/** Body to replace the fields of a test case. */
 data class UpdateAssessmentQuestionTestcaseRequest(
   @field:Schema(description = "Zero-based test case position inside the question.", example = "0")
   @field:NotNull(message = "A posição é obrigatória")

@@ -9,10 +9,16 @@ import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 
+/**
+ * Stateless security. Every request passes the filter chain; the security aspect checks the annotations of each endpoint.
+ */
 @Configuration
 @EnableWebSecurity
 class SecurityConfig {
 
+  /**
+   * Disables sessions, login forms, anonymous users and CSRF, and reads the identity from the gateway headers.
+   */
   @Bean
   fun filterChain(http: HttpSecurity): SecurityFilterChain {
     http.authorizeHttpRequests {

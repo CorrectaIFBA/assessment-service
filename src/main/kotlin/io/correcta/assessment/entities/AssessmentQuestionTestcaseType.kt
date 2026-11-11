@@ -1,5 +1,6 @@
 package io.correcta.assessment.entities
 
+/** Visibility of a test case to students. Faculty always see everything. */
 enum class AssessmentQuestionTestcaseType(
   val isListVisible: Boolean,
   val isInputVisible: Boolean,

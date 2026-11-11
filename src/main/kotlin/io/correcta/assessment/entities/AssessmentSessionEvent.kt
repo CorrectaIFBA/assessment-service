@@ -4,6 +4,7 @@ import jakarta.persistence.*
 import org.hibernate.annotations.UuidGenerator
 import java.time.Instant
 
+/** Audit entry of a session. [actorProfileId] is set when faculty caused the event. */
 @Entity
 @Table(
   name = "assessment_session_events",

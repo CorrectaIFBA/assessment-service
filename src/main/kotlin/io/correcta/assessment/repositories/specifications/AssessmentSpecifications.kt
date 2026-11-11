@@ -6,6 +6,7 @@ import io.correcta.assessment.repositories.specifications.SpecificationExt.LIKE_
 import io.correcta.assessment.repositories.specifications.SpecificationExt.toContainsPattern
 import org.springframework.data.jpa.domain.Specification
 
+/** Filters of the assessment list. A function returns null when its filter is not set. */
 object AssessmentSpecifications {
 
   fun isOfCohort(cohortId: String?): Specification<Assessment>? {
@@ -22,10 +23,6 @@ object AssessmentSpecifications {
     return Specification { root, _, builder ->
       builder.equal(root.get<AssessmentState>("state"), state)
     }
-  }
-
-  fun ownedBy(ownerProfileId: String): Specification<Assessment> = Specification { root, _, builder ->
-    builder.equal(root.get<String>("ownerProfileId"), ownerProfileId)
   }
 
   fun titleContains(title: String?): Specification<Assessment>? {

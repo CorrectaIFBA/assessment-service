@@ -6,6 +6,7 @@ import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
 import java.time.Instant
 
+/** One change of one [AssessmentParameters] value, with the old and the new value as text. */
 @Entity
 @Table(
   name = "assessment_parameters_change_log",

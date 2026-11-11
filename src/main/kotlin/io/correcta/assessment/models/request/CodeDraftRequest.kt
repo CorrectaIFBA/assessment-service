@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 
+/** Starting code and harness of a question for one language. */
 data class CodeDraftRequest(
   @field:Schema(description = "Language the student may answer in.", example = "C")
   @field:NotNull(message = "A linguagem do código é obrigatória")
@@ -25,5 +26,6 @@ data class CodeDraftRequest(
   @field:Size(max = 65535, message = "O harness deve ter no máximo 65535 caracteres")
   val harness: String = "",
 ) {
+  /** Builds the [CodeDraft]. Call only after validation, because [language] must be set. */
   fun toCodeDraft(): CodeDraft = CodeDraft(language = language!!, code = code, harness = harness)
 }

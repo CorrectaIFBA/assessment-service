@@ -7,6 +7,7 @@ import org.springframework.data.annotation.LastModifiedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
 import java.time.Instant
 
+/** Attempt of one student at one assessment. A student has at most one session per assessment. */
 @Entity
 @Table(
   name = "assessment_sessions",

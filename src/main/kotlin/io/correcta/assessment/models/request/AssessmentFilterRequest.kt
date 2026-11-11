@@ -3,6 +3,7 @@ package io.correcta.assessment.models.request
 import io.correcta.assessment.entities.AssessmentState
 import io.swagger.v3.oas.annotations.media.Schema
 
+/** Filters of the assessment list. */
 data class AssessmentFilterRequest(
   @field:Schema(description = "Id of the cohort the assessment belongs to.")
   val cohortId: String? = null,

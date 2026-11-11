@@ -5,6 +5,7 @@ import io.correcta.assessment.entities.AssessmentSessionState
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.Instant
 
+/** Session of a student, with the rules the client needs. */
 data class GetAssessmentSessionResponse(
   val id: String,
   val assessmentId: String,
@@ -27,12 +28,14 @@ data class GetAssessmentSessionResponse(
   val rules: Rules,
 ) {
 
+  /** Assessment parameters that change what the student sees. */
   data class Rules(
     val canViewDefinitiveTestcaseScoringAfterSubmission: Boolean,
   )
 
   companion object {
 
+    /** Maps a saved [AssessmentSession] at the server time [now]. */
     fun fromSession(
       session: AssessmentSession,
       now: Instant,
@@ -59,6 +62,7 @@ data class GetAssessmentSessionResponse(
   }
 }
 
+/** Whether the session finished, or is still running at [now], after the due date of its assessment. */
 fun AssessmentSession.isLate(now: Instant): Boolean {
   val dueDate = assessment.dueDate ?: return false
 

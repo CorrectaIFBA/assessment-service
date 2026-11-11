@@ -7,6 +7,7 @@ import io.correcta.assessment.models.response.PagedResponse
 import io.correcta.assessment.service.AssessmentService
 import org.springframework.web.bind.annotation.RestController
 
+/** Delegates [AssessmentsController] to [AssessmentService]. */
 @RestController
 class AssessmentsControllerImpl(
   val assessmentService: AssessmentService,

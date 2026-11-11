@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
 import java.time.Instant
 
+/** Body to replace the editable fields of an assessment. */
 data class UpdateAssessmentRequest(
   @field:Schema(description = "Assessment title.", example = "Lista 1")
   @field:NotBlank(message = "O título é obrigatório")

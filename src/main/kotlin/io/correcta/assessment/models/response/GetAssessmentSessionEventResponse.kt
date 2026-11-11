@@ -3,6 +3,7 @@ package io.correcta.assessment.models.response
 import io.correcta.assessment.entities.AssessmentSessionEvent
 import io.correcta.assessment.entities.AssessmentSessionEventType
 
+/** Event of a session. */
 data class GetAssessmentSessionEventResponse(
   val id: String,
   val type: AssessmentSessionEventType,
@@ -14,6 +15,7 @@ data class GetAssessmentSessionEventResponse(
 
   companion object {
 
+    /** Maps a saved [AssessmentSessionEvent]. */
     fun fromEvent(event: AssessmentSessionEvent): GetAssessmentSessionEventResponse = GetAssessmentSessionEventResponse(
       id = event.id!!,
       type = event.type,

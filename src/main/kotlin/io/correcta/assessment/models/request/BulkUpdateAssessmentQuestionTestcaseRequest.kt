@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.Size
 
+/** Changes applied to several test cases. Null fields keep their value. */
 data class BulkUpdateAssessmentQuestionTestcaseRequest(
   @field:Schema(
     description = "ID's of the test cases to update, in the same order as the request list.",

@@ -14,7 +14,7 @@ import java.sql.Timestamp
 import java.time.Clock
 import java.time.Duration
 
-/*
+/**
  * Publishes the outbox to RabbitMQ. A row is marked published only after the
  * broker confirms it; a crash in between publishes it again, so consumers
  * must be idempotent. Failed rows back off exponentially, up to 5 minutes.
@@ -34,14 +34,13 @@ class OutboxRelay(
 
   private class Pending(val id: String, val exchange: String, val routingKey: String, val payload: String, val attempts: Int)
 
+  /** Publishes pending messages in batches until a batch is not full. */
   @Scheduled(
     fixedDelayString = "\${outbox.relay-interval-ms:1000}",
     initialDelayString = "\${outbox.relay-interval-ms:1000}",
   )
   fun relay() {
-    while (relayBatch() == BATCH_SIZE) {
-      // a full batch may mean more are waiting.
-    }
+    while (relayBatch() == BATCH_SIZE) Unit
   }
 
   private fun relayBatch(): Int = transactionTemplate.execute {

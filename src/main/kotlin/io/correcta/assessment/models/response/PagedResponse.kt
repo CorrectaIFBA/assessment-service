@@ -1,5 +1,6 @@
 package io.correcta.assessment.models.response
 
+/** One page of a list. */
 data class PagedResponse<T>(
   val content: List<T>,
   val page: Int,

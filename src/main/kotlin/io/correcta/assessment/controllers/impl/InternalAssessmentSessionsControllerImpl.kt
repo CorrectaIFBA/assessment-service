@@ -5,6 +5,7 @@ import io.correcta.assessment.models.response.GetSessionSubmissionStatusResponse
 import io.correcta.assessment.service.AssessmentSessionService
 import org.springframework.web.bind.annotation.RestController
 
+/** Delegates [InternalAssessmentSessionsController] to [AssessmentSessionService]. */
 @RestController
 class InternalAssessmentSessionsControllerImpl(
   val assessmentSessionService: AssessmentSessionService,

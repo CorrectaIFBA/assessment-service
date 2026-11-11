@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
 
+/** Persistence of [AssessmentQuestionTestcase]. */
 @Repository
 interface AssessmentQuestionTestcaseRepository : JpaRepository<AssessmentQuestionTestcase, String> {
   fun findByQuestionIdAndIdInOrderByPositionAsc(
@@ -26,10 +27,4 @@ interface AssessmentQuestionTestcaseRepository : JpaRepository<AssessmentQuestio
 
   @Query("select max(t.position) from AssessmentQuestionTestcase t where t.question.id = :questionId")
   fun findMaxPositionByQuestionId(questionId: String): Int?
-
-  fun findTopByQuestionIdOrderByPositionDesc(questionId: String): AssessmentQuestionTestcase?
-
-  fun countByQuestionId(questionId: String): Long
-
-  fun deleteByQuestionId(questionId: String)
 }

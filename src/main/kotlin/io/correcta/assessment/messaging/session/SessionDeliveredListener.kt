@@ -11,6 +11,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener
 import org.springframework.stereotype.Component
 import java.time.Instant
 
+/** Consumes `session.delivered` messages from workspace-service and marks the sessions submitted. */
 @Component
 class SessionDeliveredListener(
   val assessmentSessionService: AssessmentSessionService,
@@ -19,6 +20,7 @@ class SessionDeliveredListener(
 
   private val log: Logger = LoggerFactory.getLogger(SessionDeliveredListener::class.java)
 
+  /** Submits the session of the message. A message for an unknown session is logged and dropped. */
   @RabbitListener(queues = [SessionMessaging.SESSION_DELIVERED_QUEUE])
   fun onSessionDelivered(message: Message) {
     val delivered = objectMapper.readValue<SessionDeliveredMessage>(message.body)

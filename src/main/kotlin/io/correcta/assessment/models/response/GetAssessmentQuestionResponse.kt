@@ -4,6 +4,7 @@ import io.correcta.assessment.entities.AssessmentQuestion
 import io.correcta.assessment.entities.ProgrammingLanguage
 import java.math.BigDecimal
 
+/** Question of an assessment. */
 data class GetAssessmentQuestionResponse(
   val id: String,
   val assessmentId: String,
@@ -18,6 +19,7 @@ data class GetAssessmentQuestionResponse(
   val updatedAt: String,
 ) {
 
+  /** Starting code of one language. [harness] is null for students. */
   data class GetCodeDraftResponse(
     val language: ProgrammingLanguage,
     val code: String,
@@ -26,6 +28,9 @@ data class GetAssessmentQuestionResponse(
 
   companion object {
 
+    /**
+     * Maps a saved [AssessmentQuestion]. Code drafts follow the [ProgrammingLanguage] order; harnesses are kept only for faculty.
+     */
     fun fromQuestion(question: AssessmentQuestion, isFaculty: Boolean): GetAssessmentQuestionResponse = GetAssessmentQuestionResponse(
       id = question.id!!,
       assessmentId = question.assessment.id!!,

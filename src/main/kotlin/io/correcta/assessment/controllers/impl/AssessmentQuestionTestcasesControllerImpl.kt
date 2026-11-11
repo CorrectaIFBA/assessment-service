@@ -10,6 +10,7 @@ import io.correcta.assessment.service.AssessmentQuestionTestcaseService
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
 
+/** Delegates [AssessmentQuestionTestcasesController] to [AssessmentQuestionTestcaseService]. */
 @RestController
 class AssessmentQuestionTestcasesControllerImpl(
   val assessmentQuestionTestcaseService: AssessmentQuestionTestcaseService,

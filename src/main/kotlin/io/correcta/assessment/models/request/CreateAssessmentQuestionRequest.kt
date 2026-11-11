@@ -7,6 +7,7 @@ import jakarta.validation.Valid
 import jakarta.validation.constraints.*
 import java.math.BigDecimal
 
+/** Body to create a question. */
 data class CreateAssessmentQuestionRequest(
   @field:Schema(
     description = "Zero-based question position inside the assessment. Appended after the last question when omitted.",

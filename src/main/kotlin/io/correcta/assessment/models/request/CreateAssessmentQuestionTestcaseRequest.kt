@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 
+/** Body to create a test case. */
 data class CreateAssessmentQuestionTestcaseRequest(
   @field:Schema(
     description = "Zero-based test case position inside the question. Appended after the last test case when omitted.",

@@ -3,6 +3,7 @@ package io.correcta.assessment.models.response
 import io.correcta.assessment.entities.AssessmentQuestionTestcase
 import io.correcta.assessment.entities.AssessmentQuestionTestcaseType
 
+/** Test case of a question. Hidden [input] and [expectedOutput] are null. */
 data class GetAssessmentQuestionTestcaseResponse(
   val id: String,
   val questionId: String,
@@ -18,6 +19,9 @@ data class GetAssessmentQuestionTestcaseResponse(
 
   companion object {
 
+    /**
+     * Maps a saved [AssessmentQuestionTestcase]. Faculty see every field; students see what the type allows.
+     */
     fun fromTestcase(
       testcase: AssessmentQuestionTestcase,
       isFaculty: Boolean,

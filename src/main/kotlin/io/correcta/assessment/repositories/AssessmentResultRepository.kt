@@ -4,6 +4,7 @@ import io.correcta.assessment.entities.AssessmentResult
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
+/** Persistence of [AssessmentResult]. */
 @Repository
 interface AssessmentResultRepository : JpaRepository<AssessmentResult, String> {
   fun findByAssessmentIdInAndStudentProfileId(

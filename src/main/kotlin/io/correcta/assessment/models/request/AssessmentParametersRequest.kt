@@ -5,6 +5,7 @@ import io.correcta.assessment.entities.AssessmentParameters
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.constraints.Min
 
+/** Parameters given when an assessment is created. */
 data class AssessmentParametersRequest(
   @field:Schema(description = "Whether submissions are accepted after the due date.", defaultValue = "false")
   val canBeSubmittedAfterDueDate: Boolean = false,
@@ -25,6 +26,7 @@ data class AssessmentParametersRequest(
   )
   val canViewDefinitiveTestcaseScoringAfterSubmission: Boolean = true,
 ) {
+  /** Builds new, unsaved [AssessmentParameters] for [assessment]. */
   fun toAssessmentParameters(assessment: Assessment): AssessmentParameters = AssessmentParameters(
     assessment = assessment,
     canBeSubmittedAfterDueDate = this.canBeSubmittedAfterDueDate,

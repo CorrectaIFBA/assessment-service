@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotNull
 
+/** Limits and type applied to every imported test case. */
 data class ImportAssessmentQuestionTestcasesRequest(
   @field:Schema(description = "Execution time limit in seconds.", defaultValue = "5")
   @field:Min(value = 1, message = "O limite de tempo deve ser de pelo menos 1 segundo")

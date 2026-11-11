@@ -7,6 +7,7 @@ import org.springframework.data.annotation.LastModifiedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
 import java.time.Instant
 
+/** Rules of an assessment. [maximumTimeAllowed] is in minutes; null means no time limit. */
 @Entity
 @Table(
   name = "assessment_parameters",

@@ -9,6 +9,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener
 import java.math.BigDecimal
 import java.time.Instant
 
+/**
+ * Question of an assessment, ordered by [position]. [codeDrafts] holds one starting code and harness per allowed language.
+ */
 @Entity
 @Table(
   name = "assessment_questions",

@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
 import java.math.BigDecimal
 
+/** Persistence of [AssessmentQuestion]. */
 @Repository
 interface AssessmentQuestionRepository : JpaRepository<AssessmentQuestion, String> {
   fun findByAssessmentIdOrderByPositionAsc(assessmentId: String): List<AssessmentQuestion>
@@ -24,6 +25,9 @@ interface AssessmentQuestionRepository : JpaRepository<AssessmentQuestion, Strin
 
   fun countByAssessmentId(assessmentId: String): Long
 
+  /**
+   * Counts the questions and sums their maximum grades per assessment. Assessments without questions are absent.
+   */
   @Query(
     """
         select q.assessment.id as assessmentId, count(q) as questionCount, coalesce(sum(q.maximumGrade), 0) as totalGrade
@@ -34,6 +38,7 @@ interface AssessmentQuestionRepository : JpaRepository<AssessmentQuestion, Strin
   )
   fun summarizeByAssessmentIds(assessmentIds: Collection<String>): List<QuestionSummary>
 
+  /** Projection of [summarizeByAssessmentIds]. */
   interface QuestionSummary {
     val assessmentId: String
     val questionCount: Long

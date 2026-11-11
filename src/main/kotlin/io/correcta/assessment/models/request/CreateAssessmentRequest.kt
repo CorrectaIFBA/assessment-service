@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
 import java.time.Instant
 
+/** Body to create an assessment. */
 data class CreateAssessmentRequest(
   @field:Schema(description = "Assessment title.", example = "Lista 1")
   @field:NotBlank(message = "O título é obrigatório")

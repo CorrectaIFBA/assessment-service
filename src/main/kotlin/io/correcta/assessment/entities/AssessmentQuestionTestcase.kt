@@ -7,6 +7,7 @@ import org.springframework.data.annotation.LastModifiedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
 import java.time.Instant
 
+/** Input and expected output that the answers to a question run against, with time and memory limits. */
 @Entity
 @Table(
   name = "assessment_question_testcases",

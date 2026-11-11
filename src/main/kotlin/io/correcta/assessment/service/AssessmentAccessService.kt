@@ -15,6 +15,7 @@ import jakarta.persistence.EntityManager
 import jakarta.persistence.LockModeType
 import org.springframework.stereotype.Service
 
+/** Loads assessments and checks that the caller may read or manage them, based on cohort membership. */
 @Service
 class AssessmentAccessService(
   val assessmentRepository: AssessmentRepository,
@@ -24,8 +25,12 @@ class AssessmentAccessService(
   val entityManager: EntityManager,
 ) {
 
+  /** Returns the assessment if the caller may read it. Students only read published assessments. */
   fun findReadableAssessment(assessmentId: String): Assessment = findReadableAssessmentWithMembership(assessmentId).first
 
+  /**
+   * Returns the assessment if the caller may see its questions: faculty always, students after they start a session.
+   */
   fun findAssessmentWithVisibleQuestions(assessmentId: String): Assessment {
     val (assessment, membership) = findReadableAssessmentWithMembership(assessmentId)
 
@@ -41,6 +46,7 @@ class AssessmentAccessService(
     return assessment
   }
 
+  /** Returns the readable assessment and the caller membership in its cohort. */
   fun findReadableAssessmentWithMembership(assessmentId: String): Pair<Assessment, CohortMembershipResponse> {
     val assessment = findAssessment(assessmentId)
     val membership = requireCohortMember(assessment.cohortId ?: throw assessmentNotFound())
@@ -52,6 +58,7 @@ class AssessmentAccessService(
     return assessment to membership
   }
 
+  /** Returns the assessment, locked for update, if the caller is faculty of its active cohort. */
   fun findManageableAssessment(assessmentId: String): Assessment {
     val assessment = findAssessment(assessmentId)
 
@@ -61,6 +68,7 @@ class AssessmentAccessService(
     return assessment
   }
 
+  /** Requires the caller to be faculty (`403` otherwise) of an active cohort (`409` otherwise). */
   fun requireActiveCohortFaculty(cohortId: String): CohortMembershipResponse {
     val membership = cohortMembershipService.findCurrentMembership(cohortId, getAuthenticatedProfile().profileId)
 
@@ -75,9 +83,13 @@ class AssessmentAccessService(
     return membership
   }
 
+  /** Requires the caller to be a current member of the cohort (`403` otherwise). */
   fun requireCohortMember(cohortId: String): CohortMembershipResponse = cohortMembershipService.findCurrentMembership(cohortId, getAuthenticatedProfile().profileId)
     ?: throw ForbiddenException("Apenas membros da turma podem acessar atividades atribuídas a ela.")
 
+  /**
+   * Authenticated profile. Endpoints that call this method must use [io.correcta.assessment.security.annotations.IsLoggedUser].
+   */
   fun getAuthenticatedProfile(): ProfilePrincipal = scopeEvaluator.currentProfile()
     ?: throw InternalServerErrorException("Falha ao recuperar o principal da autenticação")
 
@@ -90,4 +102,5 @@ class AssessmentAccessService(
   }
 }
 
+/** Whether the membership has the `FACULTY` role. */
 fun CohortMembershipResponse.isFaculty(): Boolean = role == "FACULTY"

@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 
+/** Extra minutes, and an optional reason, to reopen or extend a session. */
 data class SessionTimeChangeRequest(
   @field:Schema(description = "Minutes added to the session.", example = "15")
   @field:NotNull(message = "Os minutos extras são obrigatórios")

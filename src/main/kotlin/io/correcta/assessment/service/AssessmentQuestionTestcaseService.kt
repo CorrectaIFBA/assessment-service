@@ -17,6 +17,7 @@ import io.correcta.assessment.repositories.AssessmentSessionRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
+/** Business rules of the test cases of a question. */
 @Service
 class AssessmentQuestionTestcaseService(
   val assessmentQuestionTestcaseRepository: AssessmentQuestionTestcaseRepository,
@@ -25,6 +26,7 @@ class AssessmentQuestionTestcaseService(
   val assessmentSessionRepository: AssessmentSessionRepository,
 ) {
 
+  /** Lists the test cases visible to the caller, ordered by position. */
   @Transactional(readOnly = true)
   fun getTestcases(assessmentId: String, questionId: String): List<GetAssessmentQuestionTestcaseResponse> {
     val assessment =
@@ -48,6 +50,7 @@ class AssessmentQuestionTestcaseService(
     }
   }
 
+  /** Creates a test case at the given free position, or after the last one. */
   @Transactional
   fun createTestcase(
     assessmentId: String,
@@ -84,6 +87,7 @@ class AssessmentQuestionTestcaseService(
     return GetAssessmentQuestionTestcaseResponse.fromTestcase(testcase, isFaculty = true)
   }
 
+  /** Replaces the fields of a test case. The new position must be free. */
   @Transactional
   fun updateTestcase(
     assessmentId: String,
@@ -135,6 +139,7 @@ class AssessmentQuestionTestcaseService(
     return GetAssessmentQuestionTestcaseResponse.fromTestcase(updatedTestcase, isFaculty = true)
   }
 
+  /** Applies the non-null fields of the request to every listed test case. */
   @Transactional
   fun bulkUpdateTestcases(
     assessmentId: String,
@@ -176,6 +181,7 @@ class AssessmentQuestionTestcaseService(
     }
   }
 
+  /** Deletes a test case. After a student starts, only `PUBLIC` test cases can be deleted. */
   @Transactional
   fun deleteTestcase(assessmentId: String, questionId: String, testcaseId: String) {
     assessmentAccessService.findManageableAssessment(assessmentId)
@@ -190,6 +196,7 @@ class AssessmentQuestionTestcaseService(
     assessmentQuestionTestcaseRepository.delete(testcase)
   }
 
+  /** Deletes the listed test cases, with the same rule as [deleteTestcase]. */
   @Transactional
   fun bulkDeleteTestcases(assessmentId: String, questionId: String, testcaseIds: List<String>) {
     assessmentAccessService.findManageableAssessment(assessmentId)
@@ -212,6 +219,9 @@ class AssessmentQuestionTestcaseService(
     assessmentQuestionTestcaseRepository.deleteAll(testcases)
   }
 
+  /**
+   * Creates one test case per pair of lines of [inputs] and [outputs]. Both files must have the same number of lines.
+   */
   @Transactional
   fun importTestcases(
     assessmentId: String,
@@ -225,8 +235,8 @@ class AssessmentQuestionTestcaseService(
     val question = assessmentQuestionRepository.findByIdAndAssessmentId(questionId, assessmentId)
       ?: throw NotFoundException("Questão não encontrada.")
 
-    val inputLines = inputs.inputStream.bufferedReader().readLines()
-    val outputLines = outputs.inputStream.bufferedReader().readLines()
+    val inputLines = inputs.inputStream.reader().readLines()
+    val outputLines = outputs.inputStream.reader().readLines()
 
     if (inputLines.size != outputLines.size) {
       throw BadRequestException("O número de linhas de entrada e saída não corresponde.")
@@ -253,6 +263,11 @@ class AssessmentQuestionTestcaseService(
     }
   }
 
+  /**
+   * Renumbers every test case of the question, from 1, in the order of [newOrder].
+   *
+   * Positions go through negative values first, so the unique position constraint never fails.
+   */
   @Transactional
   fun reorderTestcases(
     assessmentId: String,

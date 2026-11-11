@@ -25,6 +25,13 @@ import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 
+/**
+ * Business rules of assessment sessions.
+ *
+ * A running session expires when the clock passes [AssessmentSession.expiresAt]. Write paths store the
+ * expiry (`refresh`); read-only paths only show it in the response (`project`). Every end of a session
+ * except a student delivery sends `session.ended` to workspace-service through the outbox.
+ */
 @Service
 class AssessmentSessionService(
   val assessmentSessionRepository: AssessmentSessionRepository,
@@ -36,6 +43,7 @@ class AssessmentSessionService(
   val outbox: Outbox,
 ) {
 
+  /** Returns the session of the caller in the assessment. */
   @Transactional(noRollbackFor = [ConflictException::class])
   fun getMySession(assessmentId: String): GetAssessmentSessionResponse {
     val (_, membership) = assessmentAccessService.findReadableAssessmentWithMembership(assessmentId)
@@ -49,6 +57,11 @@ class AssessmentSessionService(
     return respond(session, now)
   }
 
+  /**
+   * Starts the session of the caller, or resumes it. The second value is true when the session was created.
+   *
+   * The session expires at the earliest of the time limit and, without late submissions, the due date.
+   */
   @Transactional(noRollbackFor = [ConflictException::class])
   fun startSession(assessmentId: String): Pair<GetAssessmentSessionResponse, Boolean> {
     val (assessment, membership) = assessmentAccessService.findReadableAssessmentWithMembership(assessmentId)
@@ -111,6 +124,9 @@ class AssessmentSessionService(
     return respond(session, now) to true
   }
 
+  /**
+   * Adds the time since the previous heartbeat to the open time. Gaps longer than one minute are not counted.
+   */
   @Transactional(noRollbackFor = [ConflictException::class])
   fun heartbeat(assessmentId: String): GetAssessmentSessionResponse {
     val now = clock.instant()
@@ -127,6 +143,9 @@ class AssessmentSessionService(
     return respond(session, now)
   }
 
+  /**
+   * Marks the session submitted at [deliveredAt], unless it already finished. Called for `session.delivered`.
+   */
   @Transactional
   fun deliverSession(assessmentId: String, studentProfileId: String, deliveredAt: Instant) {
     val session = assessmentSessionRepository.lockByAssessmentIdAndStudentProfileId(assessmentId, studentProfileId)
@@ -141,6 +160,7 @@ class AssessmentSessionService(
     finish(session, AssessmentSessionState.SUBMITTED, deliveredAt, AssessmentSessionEventType.SUBMITTED)
   }
 
+  /** Lists the sessions of the caller across all cohorts. */
   @Transactional(readOnly = true)
   fun getMySessions(
     filter: SessionFilterRequest,
@@ -160,6 +180,7 @@ class AssessmentSessionService(
     }
   }
 
+  /** Returns the session summary of the caller for each of [assessmentIds] that has a session. */
   fun summarizeMySessions(assessmentIds: List<String>): Map<String, GetAssessmentSessionSummaryResponse> {
     if (assessmentIds.isEmpty()) return emptyMap()
 
@@ -176,6 +197,7 @@ class AssessmentSessionService(
       }
   }
 
+  /** Lists the sessions of the assessment. Faculty only. */
   @Transactional(readOnly = true)
   fun getSessions(
     assessmentId: String,
@@ -199,6 +221,9 @@ class AssessmentSessionService(
     }
   }
 
+  /**
+   * Counts the sessions per state, including sessions that expired but are not yet stored as expired. Faculty only.
+   */
   @Transactional(readOnly = true)
   fun countSessions(assessmentId: String): Map<AssessmentSessionState, Long> {
     requireFacultyReader(assessmentId)
@@ -220,6 +245,7 @@ class AssessmentSessionService(
     return counts
   }
 
+  /** Returns one session of the assessment. Faculty only. */
   @Transactional(readOnly = true)
   fun getSession(assessmentId: String, sessionId: String): GetAssessmentSessionResponse {
     requireFacultyReader(assessmentId)
@@ -232,6 +258,7 @@ class AssessmentSessionService(
     return respond(session, now)
   }
 
+  /** Lists the events of one session, oldest first. Faculty only. */
   @Transactional(readOnly = true)
   fun getSessionEvents(assessmentId: String, sessionId: String): List<GetAssessmentSessionEventResponse> {
     requireFacultyReader(assessmentId)
@@ -242,6 +269,7 @@ class AssessmentSessionService(
       .map(GetAssessmentSessionEventResponse::fromEvent)
   }
 
+  /** Reopens a finished session of a published assessment until now plus the extra minutes. */
   @Transactional
   fun reopenSession(
     assessmentId: String,
@@ -273,6 +301,7 @@ class AssessmentSessionService(
     return respond(assessmentSessionRepository.saveAndFlush(session), now)
   }
 
+  /** Moves the expiry of a running, time-limited session by the extra minutes. */
   @Transactional
   fun extendSession(
     assessmentId: String,
@@ -299,6 +328,7 @@ class AssessmentSessionService(
     return respond(assessmentSessionRepository.saveAndFlush(session), now)
   }
 
+  /** Finishes a running session as submitted, on behalf of faculty. */
   @Transactional
   fun closeSession(assessmentId: String, sessionId: String): GetAssessmentSessionResponse {
     assessmentAccessService.findManageableAssessment(assessmentId)
@@ -317,6 +347,9 @@ class AssessmentSessionService(
     return respond(assessmentSessionRepository.saveAndFlush(session), now)
   }
 
+  /**
+   * Expires the running sessions of an assessment that is being archived. Runs in the caller transaction.
+   */
   fun finishSessionsOnArchive(assessment: Assessment) {
     val now = clock.instant()
 
@@ -332,6 +365,7 @@ class AssessmentSessionService(
       }
   }
 
+  /** Stores the expiry of the session if its time ran out. */
   @Transactional
   fun refreshSession(sessionId: String) {
     val session = assessmentSessionRepository.lockById(sessionId) ?: return
@@ -339,6 +373,9 @@ class AssessmentSessionService(
     refresh(session, clock.instant())
   }
 
+  /**
+   * Tells whether the session accepts submissions: while running, and for a short grace time after it expires by time.
+   */
   @Transactional(readOnly = true)
   fun getSubmissionStatus(assessmentId: String, studentProfileId: String): GetSessionSubmissionStatusResponse {
     val now = clock.instant()

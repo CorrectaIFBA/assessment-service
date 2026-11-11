@@ -7,6 +7,7 @@ import io.correcta.assessment.repositories.AssessmentQuestionRepository
 import io.swagger.v3.oas.annotations.media.Schema
 import java.math.BigDecimal
 
+/** Assessment with its parameters, question totals and, for students, their score and session. */
 data class GetAssessmentResponse(
   val id: String,
   val ownerProfileId: String,
@@ -30,6 +31,7 @@ data class GetAssessmentResponse(
 
   companion object {
 
+    /** Maps a saved [Assessment]. Missing question totals count as zero questions and zero grade. */
     fun fromAssessment(
       assessment: Assessment,
       parameters: AssessmentParameters? = null,

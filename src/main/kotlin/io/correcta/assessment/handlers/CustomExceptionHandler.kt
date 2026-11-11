@@ -16,6 +16,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.servlet.resource.NoResourceFoundException
 
+/**
+ * Turns exceptions into [ErrorResponse] or [ValidationErrorResponse] bodies with user-facing messages in Portuguese.
+ */
 @RestControllerAdvice
 class CustomExceptionHandler {
 

@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 
+/** Business rules of assessments: listing, creation, edition, state changes and parameters. */
 @Service
 class AssessmentService(
   val assessmentRepository: AssessmentRepository,
@@ -32,6 +33,9 @@ class AssessmentService(
   val assessmentSessionService: AssessmentSessionService,
 ) {
 
+  /**
+   * Lists the assessments of the cohort in the filter. The cohort is required; students only see published assessments.
+   */
   @Transactional(readOnly = true)
   fun getMyAssessments(
     filter: AssessmentFilterRequest,
@@ -75,6 +79,7 @@ class AssessmentService(
     }
   }
 
+  /** Returns an assessment readable by the caller. */
   @Transactional(readOnly = true)
   fun getAssessment(assessmentId: String): GetAssessmentResponse {
     val assessment = assessmentAccessService.findReadableAssessment(assessmentId)
@@ -82,6 +87,7 @@ class AssessmentService(
     return respond(assessment, assessmentParametersRepository.findByAssessmentId(assessmentId))
   }
 
+  /** Returns the assessment with [slug] in [cohortId], with the same access rules as [getAssessment]. */
   @Transactional(readOnly = true)
   fun getAssessmentBySlug(cohortId: String, slug: String): GetAssessmentResponse {
     val assessment = assessmentRepository.findByCohortIdAndSlug(cohortId, slug)
@@ -90,6 +96,9 @@ class AssessmentService(
     return getAssessment(assessment.id!!)
   }
 
+  /**
+   * Creates a draft assessment and its parameters. Without a slug, a unique slug is generated from the title.
+   */
   @Transactional
   fun createAssessment(request: CreateAssessmentRequest): GetAssessmentResponse {
     val principal = assessmentAccessService.getAuthenticatedProfile()
@@ -121,12 +130,15 @@ class AssessmentService(
     return respond(assessment, parameters)
   }
 
+  /** Publishes the assessment. It needs at least one question. */
   @Transactional
   fun publishAssessment(assessmentId: String): GetAssessmentResponse = changeState(assessmentId, AssessmentState.PUBLISHED, "A atividade já está publicada.")
 
+  /** Archives the assessment and expires its running sessions. */
   @Transactional
   fun archiveAssessment(assessmentId: String): GetAssessmentResponse = changeState(assessmentId, AssessmentState.ARCHIVED, "A atividade já está arquivada.")
 
+  /** Replaces the title, slug, description and due date. */
   @Transactional
   fun editAssessment(assessmentId: String, request: UpdateAssessmentRequest): GetAssessmentResponse {
     val assessment = assessmentAccessService.findManageableAssessment(assessmentId)
@@ -145,6 +157,7 @@ class AssessmentService(
     )
   }
 
+  /** Applies the change and saves one [AssessmentParameterChangeLog] per changed value. */
   @Transactional
   fun changeAssessmentParameters(
     assessmentId: String,

@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.stereotype.Repository
 
+/** Persistence of [Assessment], with specification queries for the assessment list. */
 @Repository
 interface AssessmentRepository :
   JpaRepository<Assessment, String>,
